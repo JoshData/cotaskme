@@ -1,4 +1,5 @@
 .env
+**/*.pyc
 db
 __pycache__
 cotaskme/settings_local.py
