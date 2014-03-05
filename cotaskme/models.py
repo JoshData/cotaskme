@@ -65,6 +65,24 @@ class TaskList(models.Model):
     def get_owners(self):
         return ", ".join( str(user) for user in self.owners.all() )
 
+    def change_title(self, v):
+        v = v.strip()
+        if v == "":
+            raise ValueError("You did not provide a new name.")
+        self.title = v
+        self.save()
+
+    def change_slug(self, v):
+        v = v.strip()
+        if v == "":
+            raise ValueError("You did not provide a new URL.")
+        if len(v) > TASK_LIST_SLUG_MAX_LENGTH:
+            raise ValueError("The new URL is too long.")
+        for c in v:
+            if c not in TASK_LIST_SLUG_CHARS:
+                raise ValueError("The new URL may only contain %s." % TASK_LIST_SLUG_CHAR_DESCRIPTION)
+        self.slug = v
+        self.save()
 
 class Task(models.Model):
     created = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -86,7 +104,7 @@ class Task(models.Model):
     def new(user, incoming, outgoing, dependent=None):
         """Creates a new Task."""
 
-        if "post" not in incoming.get_user_roles(user): raise ValueError("User does not have permission to post a task on the incoming task list.")
+        if "admin" not in incoming.get_user_roles(user): raise ValueError("User does not have permission to post an incoming task on the incoming task list.")
         if "post" not in outgoing.get_user_roles(user): raise ValueError("User does not have permission to post a task on the outgoing task list.")
 
         t = Task()

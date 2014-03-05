@@ -3,7 +3,7 @@ from django.http import HttpResponseForbidden
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 
-from cotaskme.models import TaskList, Task, TASK_LIST_SLUG_MAX_LENGTH, TASK_LIST_SLUG_CHARS, TASK_LIST_SLUG_CHAR_DESCRIPTION, TASK_STATE_NAMES
+from cotaskme.models import TaskList, Task, TASK_STATE_NAMES
 from cotaskme.utils import json_response
 
 def home(request):
@@ -46,27 +46,17 @@ def tasklist(request, slug):
 @json_response
 def tasklist_action(request, slug):
 	tl = get_object_or_404(TaskList, slug=slug)
-	if "admin" not in tl.get_user_roles(request.user):
-		return HttpResponseForbidden()
 
-	if request.POST.get("action") == "rename":
-		v = str(request.POST.get("value")).strip()
-		if v == "":
-			return { "status": "error", "msg": "You did not provide a new name." }
-		tl.title = v
-		tl.save()
-
-	if request.POST.get("action") == "slug":
-		v = str(request.POST.get("value")).strip()
-		if v == "":
-			return { "status": "error", "msg": "You did not provide a new URL." }
-		if len(v) > TASK_LIST_SLUG_MAX_LENGTH:
-			return { "status": "error", "msg": "The new URL is too long." }
-		for c in v:
-			if c not in TASK_LIST_SLUG_CHARS:
-				return { "status": "error", "msg": "The new URL may only contain %s." % TASK_LIST_SLUG_CHAR_DESCRIPTION }
-		tl.slug = v
-		tl.save()
+	if request.POST.get("action") in ("rename", "slug"):
+		if "admin" not in tl.get_user_roles(request.user):
+			return HttpResponseForbidden()
+			
+		v = str(request.POST.get("value"))
+		try:
+			if request.POST.get("action") == "rename": tl.change_title(v)
+			if request.POST.get("action") == "slug": tl.change_slug(v)
+		except ValueError as e:
+			return { "status": "error", "msg": str(e) }
 
 	if request.POST.get("action") == "task-state":
 		t = get_object_or_404(Task, id=request.POST.get("task"))
@@ -91,11 +81,14 @@ def tasklist_post(request, slug):
 		if "admin" not in tl.get_user_roles(request.user):
 			return HttpResponseForbidden()
 
+	# create the task
 	t = Task.new(request.user, incoming, tl)
 
+	# update with initial properties
 	t.title = str(request.POST.get("title")).strip()
 	t.notes = str(request.POST.get("note")).strip()
 	t.autoclose = request.POST.get("autoclose") != None
+	t.save()
 
 	return { "status": "ok" }
 
