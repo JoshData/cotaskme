@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<div class="container">
+
+    {% if user.is_authenticated %}
+	<p><a href="/new-task-list">New Task List</a></p>
+
+	<div class="row">
+		{% for name, tasklists in groups %}
+		<div class="col-sm-4">
+			<h2>{{name}}</h2>
+
+			<ul>
+			{% for tasklist in tasklists %}
+				<li><a href="{{tasklist.get_absolute_url}}">{{tasklist.title}}</a>
+			{% empty %}
+				<li>You do not have any task lists in this category.</li>
+			{% endfor %}
+			</ul>
+		</div>
+		{% endfor %}
+	</div>
+	{% endif %}
+	
+</div>
+{% endblock %}

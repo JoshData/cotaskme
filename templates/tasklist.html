@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}{{tasklist.title}} -- CoTask.me{% endblock %}
+
+{% block body %}
+<div class="container">
+
+	{% if "admin" in roles %}
+		<p class="admin-actions" style="margin: 0; font-size: 90%; color: #777;">
+			  <a href="#" onclick="return do_rename()">change title</a>
+			| <a href="#" onclick="return do_change_slug()">change url</a>
+		</p>
+	{% endif %}
+
+    <h1 style="margin-top: 0;">{{tasklist.title}}</h1>
+    <p class="owners"><span>task list owned by</span> {{tasklist.get_owners}}</p>
+
+    <div class="row">
+
+    {% if "post" in roles %}
+    <div class="col-sm-4">
+    	<h2>Post a New Task</h2>
+
+		{% if "admin" not in roles %}
+			<p>You may add a task to this task list.</p>
+		{% endif %}
+
+		<form id="post_form" role="form" onsubmit="return do_post()">
+		  <div class="form-group">
+		    <label for="postTitle">Subject</label>
+		    <input type="text" class="form-control" id="postTitle" placeholder="task subject">
+		  </div>
+		  <div class="form-group">
+		    <label for="postNotes">Notes</label>
+		    <textarea class="form-control" id="postNotes" placeholder="additional notes for this task (optional)"></textarea>
+		  </div>
+		  <div class="form-group">
+		  	{% if my_incoming_lists|length == 0 %}
+		  		<p>We&rsquo;ll make a new task list for <i>you</i> where you'll see this task as <i>incoming</i>.</p>
+		  	{% elif my_incoming_lists|length == 1 %}
+		  		{% if my_incoming_lists.0 == tasklist %}
+		  		{% else %}
+		  			<p>You'll see this task as <i>incoming</i> on your list <span>{{my_incoming_lists.0.title}}</span>.</p>
+		  		{% endif %}
+		  	{% else %}
+			    <label for="postIncoming">Who&rsquo;s Asking?</label>
+		    	<select class="form-control" id="postIncoming" size="1">
+		    		{% for tl in my_incoming_lists %}
+		    			{% if tl == tasklist %}
+		    				<option value="{{tl.id}}">(No One Is Asking)</option>
+		    			{% else %}
+		    				<option value="{{tl.id}}">{{tl.title}}</option>
+		    			{% endif %}
+		    		{% endfor %}
+		    	</select>
+		  	{% endif %}
+		  </div>
+		  <div class="checkbox">
+		    <label>
+		      <input id="postAutoClose" type="checkbox">
+		      {% if tasklist.owners.all.count == 1 %}
+		      	Let {{tasklist.get_owners}} close this task when they complete it.
+		      {% else %}
+		      	Let whoever completes the task also mark it as closed.
+		      {% endif %}
+		    </label>
+		  </div>
+		  <div style="text-align: center">
+		  	<button type="submit" class="btn btn-primary btn-lg">Post It</button>
+		  </div>
+		</form>
+	</div>
+    {% endif %}
+
+    {% if "observe" in roles %}
+    <div class="col-sm-8">
+    	<h2>Waiting On (Incoming)</h2>
+
+    	{% for task in tasks_incoming %}
+    		{% include "task.html" %}
+    	{% endfor %}
+
+    	<h2>Pending (Outgoing)</h2>
+
+    	{% for task in tasks_outgoing %}
+    		{% include "task.html" %}
+    	{% endfor %}
+    </div>
+    {% endif %}
+
+	</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+	{% if "admin" in roles %}
+	function do_rename() {
+		var elem = $('h1');
+		do_action_with_input("rename", "Rename this task list?", elem.text(), function(new_value) {
+				elem.text(new_value);
+		});
+	}
+
+	function do_change_slug() {
+		do_action_with_input("slug", "Change the URL of this task list?",
+			"{{tasklist.slug|escapejs}}",
+			function(new_value) {
+				window.location = "/t/" + new_value;
+		});
+	}
+
+	function do_action_with_input(action, prompt_text, default_value, callback) {
+		var value = prompt(prompt_text, default_value);
+		if (!value) return;
+		do_action({ action: action, value: value }, action, callback, value);
+	}
+
+	function do_action(post_data, err_title, callback, callback_arg) {
+	  	$.ajax(
+	  		"{{tasklist.get_absolute_url}}/_action",
+	  		{
+	  			data: post_data,
+	  			method: "POST",
+	  			success: function(res) {
+	  				if (res.status == "ok")
+	  					callback(callback_arg);
+	  				else
+	  					show_modal_error(err_title, res.msg);
+	  			},
+	  			error: function() {
+				  	show_modal_error(err_title, "There was an error, sorry.");
+	  			}
+	  		});
+	}
+	{% endif %}
+
+	{% if "post" in roles %}
+	function post_state(state) {
+		var elems = $('#post_form input, #post_form select, #post_form textarea, #post_form button');
+		elems.prop("disabled", !state);
+	}
+
+	function do_post() {
+		if ($('#postTitle').val() == "") {
+	  		show_modal_error("post a new task", "Type in a subject for the task.");
+	  		return false;
+		}
+
+	  	$.ajax(
+	  		"{{tasklist.get_absolute_url}}/_post",
+	  		{
+	  			data: {
+	  				title: $('#postTitle').val(),
+	  				notes: $('#postNodes').val(),
+	  				incoming: $('#postIncoming').val(),
+	  				autoclose: $('#postAutoClose').val()
+	  			},
+	  			method: "POST",
+	  			success: function(res) {
+				  	post_state(true);
+	  				if (res.status != "ok") {
+	  					show_modal_error("post a new task", res.msg);
+	  					return;
+	  				}
+
+  					show_modal_error("post a new task", "Refresh the page please! :) Task has been posted.");
+
+  					// reset fields to prevent double-submit
+  					$('#postTitle').val('');
+  					$('#postNotes').val('');
+	  			},
+	  			error: function() {
+				  	show_modal_error("post a new task", "There was an error, sorry.");
+				  	post_state(true);
+	  			}
+	  		});
+		return false;
+	}
+
+	function change_task_state(task_id, new_state) {
+		do_action({ action: "task-state", task: task_id, state: new_state }, "change state", function() { window.location.reload() });
+	}
+	{% endif %}
+</script>
+{% endblock %}
