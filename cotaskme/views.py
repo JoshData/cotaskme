@@ -163,6 +163,9 @@ def tasklist_post(request):
 def profile_view(request):
 	return TemplateResponse(request, 'profile.html', { })
 
+def login_view(request):
+	return TemplateResponse(request, 'login.html', {})
+
 def logout_view(request):
 	from django.contrib.auth import logout
 	logout(request)
