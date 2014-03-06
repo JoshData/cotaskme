@@ -35,7 +35,7 @@ def tasklist(request, slug=None, which_way=None):
 	if which_way in ("incoming", None):
 		tasks = tasks.filter(incoming__in=tasklists)
 	elif which_way == "outgoing":
-		tasks = tasks.filter(outgoing__in=tasklists)
+		tasks = tasks.filter(outgoing__in=tasklists).exclude(incoming__in=tasklists)
 
 	tasks = tasks.order_by('-created')
 	for task in tasks:
