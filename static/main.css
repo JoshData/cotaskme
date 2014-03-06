@@ -1,0 +1,15 @@
+table {
+width:800px;
+}
+
+tr:nth-child(even) {
+    background-color: #ccc;
+}
+
+th.task {
+	width:600px;
+	}
+	
+.form-control {
+float:left;width:300px;height:30px;padding:6px 12px;margin:13px 15px 0 0;font-size:12px;
+}

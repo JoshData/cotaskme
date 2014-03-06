@@ -1,11 +1,5 @@
-<div class="task" style="margin: 1em 0; border: 1px solid #555; padding: 1em;">
-	<div class="title">{{task.title}}</div>
-	<div>
-		<strong>{{task.get_state_display}}</strong>
-		| change to:
-		{% for state_id, state_name in task.next_states %}
-			{% if not forloop.first %} | {% endif %}
-			<a href="#" onclick="return change_task_state({{task.id}}, {{state_id}})">{{state_name}}</a>
-		{% endfor %}
-	</div>
-</div>
+<tr>
+	<td class="task">{{task.title}}</td>
+	<td>{{task.creator}}</td>
+	<td>{{task.get_state_display}}</td>
+</tr>
