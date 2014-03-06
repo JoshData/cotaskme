@@ -1,15 +1,19 @@
-table {
-width:800px;
+.tasklist-header {
+	font-weight: bold;
 }
 
-tr:nth-child(even) {
-    background-color: #ccc;
+.tasklist-item {
+	/* this is a bootstrap row, so don't touch left/right margins */
+	padding-top: 4px;
+	padding-bottom: 4px;
 }
-
-th.task {
-	width:600px;
+	.tasklist-item.even {
+		background-color: #EEE;
 	}
-	
+	.tasklist-item:hover {
+		background-color: #F9F9F9;
+	}
+
 .form-control {
 float:left;width:300px;height:30px;padding:6px 12px;margin:13px 15px 0 0;font-size:12px;
 }

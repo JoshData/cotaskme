@@ -12,6 +12,20 @@ TASK_LIST_SLUG_OTHER_CHARS = "-_"
 TASK_LIST_SLUG_CHARS = TASK_LIST_SLUG_AUTO_CHARS + TASK_LIST_SLUG_OTHER_CHARS
 TASK_LIST_SLUG_CHAR_DESCRIPTION = "letters, numbers, dashes, and underscores"
 TASK_STATE_NAMES = ("New", "Started", "Finished", "Closed")
+TASK_STATE_VERBS = {
+    (0, 1): ("Start", "※"),
+    (0, 2): ("Finish", "✓"),
+    (0, 3): ("Close", "X"),
+    (1, 0): ("Mark as New", "↩"),
+    (1, 2): ("Finish", "✓"),
+    (1, 3): ("Close", "X"),
+    (2, 0): ("Mark as New", "↩"),
+    (2, 1): ("Return to Started", "O"),
+    (2, 3): ("Close", "X"),
+    (3, 0): ("Mark as New", "N"),
+    (3, 1): ("Return to Started" "O"),
+    (3, 2): ("Return to Finished", "↩"),
+}
 
 class TaskList(models.Model):
     created = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -42,15 +56,6 @@ class TaskList(models.Model):
         tl.save()
         tl.owners.add(owner)
         return tl
-
-    @staticmethod
-    def get_mine(user):
-        """Gets a list of lists of task lists that the user can post to or has a specific privilege to view."""
-        return [
-            ("Your Task Lists", TaskList.objects.filter(owners=user)),
-            ("You Can Post To", TaskList.objects.exclude(owners=user).filter(posters=user)),
-            ("You Can View", TaskList.objects.exclude(owners=user).exclude(posters=user).filter(observers=user)),
-        ]
 
     def get_user_roles(self, user):
         """Returns whether the user has permission to administer, post to, or observe the contents of the TaskList."""
@@ -144,6 +149,10 @@ class Task(models.Model):
             for s in (0, 1, 2): ret.add(s)
         if self.state in (2, 3) and "admin" in in_roles:
             for s in (2, 3): ret.add(s)
+
+        # SIMPLE MODE: Don't use the Started state.
+        if 1 in ret: ret.remove(1)
+
         return sorted(s for s in ret if s != self.state)
 
     def change_state(self, user, new_state):
