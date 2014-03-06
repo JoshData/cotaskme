@@ -98,29 +98,29 @@ class Task(models.Model):
     title = models.CharField(max_length=400)
     creator = models.ForeignKey(User, db_index=True, related_name="tasks_created")
     notes = models.TextField(blank=True)
-    incoming = models.ForeignKey(TaskList, db_index=True, related_name="tasks_incoming", on_delete=models.PROTECT)
     outgoing = models.ForeignKey(TaskList, db_index=True, related_name="tasks_outgoing", on_delete=models.PROTECT)
+    incoming = models.ForeignKey(TaskList, db_index=True, related_name="tasks_incoming", on_delete=models.PROTECT)
     state = models.IntegerField(choices=enumerate(TASK_STATE_NAMES))
-    hidden_on_incoming = models.BooleanField(default=False)
     hidden_on_outgoing = models.BooleanField(default=False)
+    hidden_on_incoming = models.BooleanField(default=False)
     auto_close = models.BooleanField(default=False, help_text="Automatically close a task when it is finished.")
     dependencies = models.ManyToManyField('self', blank=True, db_index=True)
     auto_finish = models.BooleanField(default=False, help_text="Automatically finish a task when its dependencies are closed or finished.")
     metadata = JSONField()
 
     @staticmethod
-    def new(user, incoming, outgoing, dependent=None):
+    def new(user, outgoing, incoming, dependent=None):
         """Creates a new Task."""
 
-        if "admin" not in incoming.get_user_roles(user): raise ValueError("User does not have permission to post an incoming task on the incoming task list.")
-        if "post" not in outgoing.get_user_roles(user): raise ValueError("User does not have permission to post a task on the outgoing task list.")
+        if "admin" not in outgoing.get_user_roles(user): raise ValueError("User does not have permission to post an outgoing task on the outgoing task list.")
+        if "post" not in incoming.get_user_roles(user): raise ValueError("User does not have permission to post a task on the incoming task list.")
 
         t = Task()
         t.title = "New Task" if not dependent else dependent.title
         t.creator = user
         t.notes = "" if not dependent else dependent.notes
-        t.incoming = incoming
         t.outgoing = outgoing
+        t.incoming = incoming
         t.state = 0
         t.save()
 
@@ -129,24 +129,24 @@ class Task(models.Model):
         e.event_data = {
             "type": "created",
             "user": user.id,
-            "incoming": incoming.id,
             "outgoing": outgoing.id,
+            "incoming": incoming.id,
             "dependent": 0  if not dependent else dependent.id,
         }
         e.save()
 
         return t
 
-    def new_dependency(self, user, outgoing):
+    def new_dependency(self, user, incoming):
         """Creates a new dependency for the Task posted to another TaskList."""
-        return Task.new(user, self.outgoing, outgoing, self)
+        return Task.new(user, self.incoming, incoming, self)
 
     def get_next_states(self, user):
         """Which states can this user change the state of this task to?
-        Note that he might be an owner of both the incoming and outgoing tasklists.
+        Note that he might be an owner of both the outgoing and incoming tasklists.
         Here we prevent transitions directly between 0/1 and 3, which may or may not be desirable."""
-        out_roles = self.outgoing.get_user_roles(user)
-        in_roles = self.incoming.get_user_roles(user)
+        out_roles = self.incoming.get_user_roles(user)
+        in_roles = self.outgoing.get_user_roles(user)
         ret = set()
         if self.state in (0, 1, 2) and "admin" in out_roles:
             for s in (0, 1, 2): ret.add(s)
@@ -159,11 +159,11 @@ class Task(models.Model):
         return sorted(s for s in ret if s != self.state)
 
     def change_state(self, user, new_state):
-        """Changes the state of a task. The outgoing owners can move a
-        Task between New, Started, and Finished, and the incoming owner can
+        """Changes the state of a task. The incoming owners can move a
+        Task between New, Started, and Finished, and the outgoing owner can
         move a Task between Finished to Closed. The creator of a Task has
         no special permission if he isn't an owner of either. To reject
-        a task's outcome, the incoming owner should close and start a new
+        a task's outcome, the outgoing owner should close and start a new
         task."""
 
         # TODO: This method needs some locking/synchronization.
@@ -172,12 +172,12 @@ class Task(models.Model):
 
         # check permissions
         if user:
-            out_roles = self.outgoing.get_user_roles(user)
-            in_roles = self.incoming.get_user_roles(user)
+            out_roles = self.incoming.get_user_roles(user)
+            in_roles = self.outgoing.get_user_roles(user)
             if self.state in (0, 1, 2) and new_state in (0, 1, 2) and "admin" not in out_roles:
-                raise ValueError("Only a user that this task is outgoing for can make that state change.")
-            if self.state in (2, 3) and new_state in (2, 3) and "admin" not in in_roles:
                 raise ValueError("Only a user that this task is incoming for can make that state change.")
+            if self.state in (2, 3) and new_state in (2, 3) and "admin" not in in_roles:
+                raise ValueError("Only a user that this task is outgoing for can make that state change.")
 
         # record change
         e = TaskEvent()

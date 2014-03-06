@@ -17,7 +17,7 @@ def newlist(request):
 	tl = TaskList.new(request.user)
 	return redirect(tl)
 
-def tasklist(request, slug=None, incoming_outgoing=None):
+def tasklist(request, slug=None, which_way=None):
 	if not slug:
 		# a list must be given in the URL for non-authenticated users
 		if not request.user.is_authenticated():
@@ -32,10 +32,10 @@ def tasklist(request, slug=None, incoming_outgoing=None):
 		tasklists = [tl]
 
 	tasks = Task.objects.all()
-	if incoming_outgoing in ("outgoing", None):
-		tasks = tasks.filter(outgoing__in=tasklists)
-	elif incoming_outgoing == "incoming":
+	if which_way in ("incoming", None):
 		tasks = tasks.filter(incoming__in=tasklists)
+	elif which_way == "outgoing":
+		tasks = tasks.filter(outgoing__in=tasklists)
 
 	tasks = tasks.order_by('-created')
 	for task in tasks:
@@ -44,7 +44,7 @@ def tasklist(request, slug=None, incoming_outgoing=None):
 
 	return TemplateResponse(request, 'tasklist.html', {
 		"baseurl": "/tasks" if slug in (None, "") else "/" + slug,
-		"incoming_outgoing": incoming_outgoing,
+		"incoming_outgoing": which_way,
 		"tasks": tasks,
 		})
 
@@ -75,29 +75,29 @@ def tasklist_action(request):
 @login_required
 @json_response
 def tasklist_post(request):
-	if request.POST.get("incoming") == "_new":
-		incoming = TaskList.new(request.user)
-	elif request.POST.get("incoming") == "_default":
+	if request.POST.get("outgoing") == "_new":
+		outgoing = TaskList.new(request.user)
+	elif request.POST.get("outgoing") == "_default":
 		tasklists = TaskList.objects.filter(owners=request.user)
 		if len(tasklists) == 0:
-			incoming = TaskList.new(request.user)
+			outgoing = TaskList.new(request.user)
 		else:
 			# TODO: Better default?
-			incoming = tasklists[0]
+			outgoing = tasklists[0]
 	else:
-		incoming = get_object_or_404(TaskList, id=request.POST.get("incoming"))
+		outgoing = get_object_or_404(TaskList, id=request.POST.get("outgoing"))
 		if "admin" not in tl.get_user_roles(request.user):
 			return HttpResponseForbidden()
 
-	if request.POST.get("outgoing") == "_not_impl":
-		outgoing = incoming
+	if request.POST.get("incoming") == "_not_impl":
+		incoming = outgoing
 	else:
-		outgoing = get_object_or_404(TaskList, id=request.POST.get("outgoing"))
-	if "post" not in outgoing.get_user_roles(request.user):
+		incoming = get_object_or_404(TaskList, id=request.POST.get("incoming"))
+	if "post" not in incoming.get_user_roles(request.user):
 		return HttpResponseForbidden()
 
 	# create the task
-	t = Task.new(request.user, incoming, outgoing)
+	t = Task.new(request.user, outgoing, incoming)
 
 	# update with initial properties
 	t.title = str(request.POST.get("title")).strip()

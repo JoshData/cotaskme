@@ -23,8 +23,8 @@ function do_post() {
   			data: {
   				title: $('#navPostTitle').val(),
   				notes: "",
-  				incoming: "_default",
-  				outgoing: "_not_impl"
+  				outgoing: "_default",
+  				incoming: "_not_impl"
   			},
   			method: "POST",
   			success: function(res) {

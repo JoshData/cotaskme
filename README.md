@@ -1,10 +1,10 @@
 # CoTask.me
 
-A task list where every task appears "outgoing" on your list and "incoming" on the task list of the person who requested the task.
+A task list where every task appears "incoming" on your list and "outgoing" on the task list of the person who requested the task.
 
 Based on an idea by Matthew Burton at http://matthewburton.org/an-idea-for-to-do-lists/.
 
-Built with Django 1.6 on Python 3.
+Built with Django 1.6. Works with either Python 2 or Python 3.
 
 ## Setup
 
