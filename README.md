@@ -8,6 +8,7 @@ Built with Django 1.6 on Python 3.
 
 ## Setup
 
+	git submodule update --init
 	virtualenv -p`which python3` .env
 	. .env/bin/activate
 	pip install -r pip-requirements.txt 
@@ -19,3 +20,9 @@ Built with Django 1.6 on Python 3.
 
 	. .env/bin/activate
 	./manage.py runserver
+
+## When things change
+
+	git submodule update --init
+	. .env/bin/activate
+	pip install -r pip-requirements.txt 
