@@ -5,86 +5,20 @@
 {% block body %}
 <div class="container">
 
-	{% if "admin" in roles %}
-		<p class="admin-actions" style="margin: 0; font-size: 90%; color: #777;">
-			  <a href="#" onclick="return do_rename()">change title</a>
-			| <a href="#" onclick="return do_change_slug()">change url</a>
-		</p>
-	{% endif %}
-
-    <h1 style="margin-top: 0;">{{tasklist.title}}</h1>
-    <p class="owners"><span>task list owned by</span> {{tasklist.get_owners}}</p>
-
-    <div class="row">
-
-    {% if "post" in roles %}
-    <div class="col-sm-4">
-    	<h2>Post a New Task</h2>
-
-		{% if "admin" not in roles %}
-			<p>You may add a task to this task list.</p>
-		{% endif %}
-
-		<form id="post_form" role="form" onsubmit="return do_post()">
-		  <div class="form-group">
-		    <label for="postTitle">Subject</label>
-		    <input type="text" class="form-control" id="postTitle" placeholder="task subject">
-		  </div>
-		  <div class="form-group">
-		    <label for="postNotes">Notes</label>
-		    <textarea class="form-control" id="postNotes" placeholder="additional notes for this task (optional)"></textarea>
-		  </div>
-		  <div class="form-group">
-		  	{% if my_incoming_lists|length == 0 %}
-		  		<p>We&rsquo;ll make a new task list for <i>you</i> where you'll see this task as <i>incoming</i>.</p>
-		  	{% elif my_incoming_lists|length == 1 %}
-		  		{% if my_incoming_lists.0 == tasklist %}
-		  		{% else %}
-		  			<p>You'll see this task as <i>incoming</i> on your list <span>{{my_incoming_lists.0.title}}</span>.</p>
-		  		{% endif %}
-		  	{% else %}
-			    <label for="postIncoming">Who&rsquo;s Asking?</label>
-		    	<select class="form-control" id="postIncoming" size="1">
-		    		{% for tl in my_incoming_lists %}
-		    			{% if tl == tasklist %}
-		    				<option value="{{tl.id}}">(No One Is Asking)</option>
-		    			{% else %}
-		    				<option value="{{tl.id}}">{{tl.title}}</option>
-		    			{% endif %}
-		    		{% endfor %}
-		    	</select>
-		  	{% endif %}
-		  </div>
-		  <div class="checkbox">
-		    <label>
-		      <input id="postAutoClose" type="checkbox">
-		      {% if tasklist.owners.all.count == 1 %}
-		      	Let {{tasklist.get_owners}} close this task when they complete it.
-		      {% else %}
-		      	Let whoever completes the task also mark it as closed.
-		      {% endif %}
-		    </label>
-		  </div>
-		  <div style="text-align: center">
-		  	<button type="submit" class="btn btn-primary btn-lg">Post It</button>
-		  </div>
-		</form>
-	</div>
-    {% endif %}
 
     {% if "observe" in roles %}
     <div class="col-sm-8">
-    	<h2>Waiting On (Incoming)</h2>
-
-    	{% for task in tasks_incoming %}
-    		{% include "task.html" %}
-    	{% endfor %}
-
-    	<h2>Pending (Outgoing)</h2>
-
-    	{% for task in tasks_outgoing %}
-    		{% include "task.html" %}
-    	{% endfor %}
+    	<h2><a href="incoming">Incoming</a> | Outgoing</h2>
+    	<table>
+			<tr>
+			  <th class="task">Task</th>
+			  <th>Sent by</th> 
+			  <th>Status</th>
+			</tr>
+			{% for task in tasks_outgoing %}
+				{% include "task.html" %}
+			{% endfor %}
+    	</table>
     </div>
     {% endif %}
 
