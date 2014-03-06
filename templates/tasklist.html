@@ -5,9 +5,9 @@
 {% block body %}
 <div class="container">
 	<h2>
-		{% if incoming_outgoing == None or incoming_outgoing == "outgoing" %}Outgoing{% else %}<a href="{{baseurl}}">Outgoing</a>{% endif %}
+		{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}Incoming{% else %}<a href="{{baseurl}}">Incoming</a>{% endif %}
 		|
-		{% if incoming_outgoing == "incoming" %}Incoming{% else %}<a href="{{baseurl}}/incoming">Incoming</a>{% endif %}
+		{% if incoming_outgoing == "outgoing" %}Outgoing{% else %}<a href="{{baseurl}}/outgoing">Outgoing</a>{% endif %}
 	</h2>
 
 	<div class="row tasklist-header">
@@ -15,7 +15,11 @@
 			Task
 		</div>
 		<div class="col-xs-3 hidden-xs">
-			Sent by
+			{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}
+				Sent by
+			{% else %}
+				Assigned to
+			{% endif %}
 		</div>
 		<div class="col-xs-2 hidden-xs">
 			Status
