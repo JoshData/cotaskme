@@ -11,30 +11,30 @@
 	</h2>
 
 	<div class="row tasklist-header">
-		<div class="col-xs-8">
+		<div class="col-xs-7">
 			Task
 		</div>
-		<div class="col-xs-2">
+		<div class="col-xs-3 hidden-xs">
 			Sent by
 		</div>
-		<div class="col-xs-2">
+		<div class="col-xs-2 hidden-xs">
 			Status
 		</div>
 	</div>
 
 	{% for task in tasks %}
 	<div class="row tasklist-item {% if forloop.counter|divisibleby:2 %}even{% endif %}">
-		<div class="col-xs-8">
+		<div class="col-sm-7">
 			{{task.title}}
 		</div>
-		<div class="col-xs-2">
+		<div class="col-sm-3">
 			{% if task.creator != request.user %}
 				{{task.creator}}
 			{% else %}
 				<i>yourself</i>
 			{% endif %}
 		</div>
-		<div class="col-xs-2">
+		<div class="col-sm-2">
 			{{task.get_state_display}}
 			{% for state, verb in task.next_states %}
 				<a href="#" onclick="return change_task_state({{task.id}}, {{state}});" class="task-change-state task-change-state-{{state}}" title="{{verb.0}}">
