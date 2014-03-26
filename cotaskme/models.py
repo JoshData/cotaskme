@@ -18,10 +18,10 @@ TASK_STATE_NAMES = ("New", "Started", "Finished", "Closed")
 TASK_STATE_VERBS = {
     (0, 1): ("Start", "play"),
     (0, 2): ("Finish", "ok"),
-    (0, 3): ("Close", "remove"),
+    (0, 3): ("Close", "ok"),
     (1, 0): ("Mark as New", "step-backward"),
     (1, 2): ("Finish", "ok"),
-    (1, 3): ("Close", "remove"),
+    (1, 3): ("Close", "ok"),
     (2, 0): ("Mark as New", "step-backward"),
     (2, 1): ("Return to Started", "asterisk"),
     (2, 3): ("Close", "remove"),
