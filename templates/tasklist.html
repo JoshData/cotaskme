@@ -4,6 +4,17 @@
 
 {% block body %}
 <div class="container">
+	{% if singleton_list %}
+		{% if admin_list %}
+			<p class="tasklist-admin-actions">
+				  <a href="#" onclick="return do_rename()">change title</a>
+				| <a href="#" onclick="return do_change_slug()">change url</a>
+			</p>
+		{% endif %}
+
+		<h1 id="task_list_title">{{singleton_list.title}}</h1>
+	{% endif %}
+
 	<h2>
 		{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}Incoming{% else %}<a href="{{baseurl}}">Incoming</a>{% endif %}
 		|
@@ -59,7 +70,7 @@
 
 {% block scripts %}
 <script>
-	{% comment %}
+	{% if singleton_list %}
 	function do_rename() {
 		var elem = $('h1');
 		do_action_with_input("rename", "Rename this task list?", elem.text(), function(new_value) {
@@ -69,7 +80,7 @@
 
 	function do_change_slug() {
 		do_action_with_input("slug", "Change the URL of this task list?",
-			"{{tasklist.slug|escapejs}}",
+			"{{singleton_list.slug|escapejs}}",
 			function(new_value) {
 				window.location = "/t/" + new_value;
 		});
@@ -78,9 +89,9 @@
 	function do_action_with_input(action, prompt_text, default_value, callback) {
 		var value = prompt(prompt_text, default_value);
 		if (!value) return;
-		do_action({ action: action, value: value }, action, callback, value);
+		do_action({ slug: "{{singleton_list.slug|escapejs}}", action: action, value: value }, action, callback, value);
 	}
-	{% endcomment %}
+	{% endif %}
 
 	function do_action(post_data, err_title, callback, callback_arg) {
 	  	$.ajax(

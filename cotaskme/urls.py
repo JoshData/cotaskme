@@ -10,7 +10,7 @@ urlpatterns = patterns('',
     url(r'^_search_for_recipient$', 'cotaskme.views.search_for_recipient'),
 
     url(r'^tasks()(?:/(outgoing|incoming))?$', 'cotaskme.views.tasklist', name='tasklist'),
-    url(r'^t/([^/]+)$', 'cotaskme.views.tasklist', name='tasklist'),
+    url(r'^t/([^/]+)(?:/(outgoing|incoming))?$', 'cotaskme.views.tasklist', name='tasklist'),
     url(r'^_action$', 'cotaskme.views.tasklist_action', name='tasklist_action'),
     url(r'^_post$', 'cotaskme.views.tasklist_post', name='tasklist_post'),
 

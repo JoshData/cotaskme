@@ -52,13 +52,17 @@ class TaskList(models.Model):
         """Creates (and returns) a new TaskList owned by owner and with default settings."""
         tl = TaskList()
         tl.slug = "".join([random.choice(TASK_LIST_SLUG_CHARS) for i in range(TASK_LIST_AUTO_SLUG_LENGTH)])
-        tl.title = "New Task List"
+        tl.title = TaskList.make_default_list_title(owner)
         tl.public_to_post = True
         tl.public_to_observe = False
         tl.notes = ""
         tl.save()
         tl.owners.add(owner)
         return tl
+
+    @staticmethod
+    def make_default_list_title(owner):
+        return str(owner) + "'s Task List"
 
     def get_user_roles(self, user):
         """Returns whether the user has permission to administer, post to, or observe the contents of the TaskList."""

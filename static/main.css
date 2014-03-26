@@ -9,6 +9,14 @@ h1 {
 	font-family: 'Abel', sans-serif;
 }
 
+h2 {
+	font-size: 23px;
+}
+
+h3 {
+	font-size: 20px;
+}
+
 .navbar-newtask form {
 	padding-top: 3px;
 	padding-left: 100px;
@@ -35,6 +43,18 @@ h1 {
 	.tt-suggestion.tt-cursor {
 	    background-color: #eee;
 	}
+
+.tasklist-admin-actions {
+	margin: 0;
+	font-size: 80%;
+}
+	.tasklist-admin-actions a {
+		color: #77B;
+	}
+
+#task_list_title {
+	margin: 0 0 10px 0;
+}
 
 .tasklist-header {
 	font-weight: bold;

@@ -17,7 +17,16 @@ def home(request):
 	if not request.user.is_authenticated():
 		return TemplateResponse(request, 'index.html', { })
 	else:
-		return redirect("/tasks")
+		tasklists = TaskList.objects.filter(owners=request.user)
+		if tasklists.count() == 0:
+			# redirect to a new task list
+			return redirect(TaskList.new(request.user))
+		elif tasklists.count() == 1:
+			# redirect to the user's task list
+			return redirect(tasklists[0])
+		else:
+			# redirect to the page that shows tasks on all lists
+			return redirect("/tasks")
 	
 @login_required
 def newlist(request):
@@ -56,8 +65,12 @@ def tasklist(request, slug=None, which_way=None):
 		for i in range(len(TASK_STATE_NAMES))
 	]
 
+	singleton_list = tasklists[0] if len(tasklists) == 1 else None
+
 	return TemplateResponse(request, 'tasklist.html', {
-		"baseurl": "/tasks" if slug in (None, "") else "/" + slug,
+		"singleton_list": singleton_list,
+		"admin_list": singleton_list and "admin" in singleton_list.get_user_roles(request.user),
+		"baseurl": "/tasks" if slug in (None, "") else "/t/" + slug,
 		"incoming_outgoing": which_way,
 		"task_groups": task_groups,
 		})
@@ -66,7 +79,7 @@ def tasklist(request, slug=None, which_way=None):
 @json_response
 def tasklist_action(request):
 	if request.POST.get("action") in ("rename", "slug"):
-		tl = get_object_or_404(TaskList, slug=slug)
+		tl = get_object_or_404(TaskList, slug=request.POST.get("slug"))
 		if "admin" not in tl.get_user_roles(request.user):
 			return HttpResponseForbidden()
 			
