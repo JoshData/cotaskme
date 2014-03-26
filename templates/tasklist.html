@@ -203,6 +203,10 @@
 				do_anim();
 			}
 
+			// begin gracefully changing which action buttons are displayed
+			// on the task by fading them out.
+			elem.find('.tasklist-item-actions').fadeOut();
+
 			function do_anim() {
 				// compute the target location for the task on the page, the location
 				// of the placeholder
@@ -229,6 +233,10 @@
 						// get rid of the placeholder in the old list gracefully
 						old_placeholder.slideUp();
 
+					// finish gracefully changing which action buttons are displayed
+					// by fading them in; CSS selectors take care of deciding which
+					// are visible
+					elem.find('.tasklist-item-actions').fadeIn();
 				});
 			}
 
