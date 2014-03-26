@@ -209,8 +209,14 @@
 			elem.css({position: 'relative', top: 0});
 			new_placeholder.css({ height: elem.outerHeight() });
 			if (new_container.is(":visible")) {
-				// gracefully create a spot for the item to land in
-				new_placeholder.slideDown(do_anim);
+				if (new_container.offset().top > $(window).height()) {
+					// the placeholder isn't visible anyway, so show it immediately
+					new_placeholder.show();
+					do_anim();
+				} else {
+					// gracefully create a spot for the item to land in
+					new_placeholder.slideDown(do_anim);
+				}
 
 			// ensure the target group is visible --- it's not visible if there are
 			// no tasks in that category
@@ -263,6 +269,7 @@
 		}
 
 		do_action({ action: "task-state", task: task_id, state: new_state }, "change state", on_task_state_changed);
+		return false; // cancel <a> event
 	}
 
 	function add_task_callback(res) {
