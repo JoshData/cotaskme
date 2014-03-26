@@ -1,3 +1,9 @@
 [submodule "ext/bootstrap"]
 	path = ext/bootstrap
 	url = https://github.com/twbs/bootstrap
+[submodule "ext/typeahead"]
+	path = ext/typeahead
+	url = https://github.com/twitter/typeahead.js
+[submodule "ext/socialicious"]
+	path = ext/socialicious
+	url = https://github.com/shalinguyen/socialicious

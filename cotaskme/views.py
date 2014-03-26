@@ -3,8 +3,15 @@ from django.http import HttpResponseForbidden
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 
-from cotaskme.models import TaskList, Task, TASK_STATE_VERBS
+from cotaskme.models import TaskList, Task, TASK_STATE_NAMES, TASK_STATE_VERBS
 from cotaskme.utils import json_response
+
+def template_context_processor(request):
+	login_methods = []
+	from social.apps.django_app.utils import BACKENDS
+	from social.backends import utils
+	icon_map = { "google": "googleplus" }
+	return { "login_backends": [(name, icon_map.get(name, name)) for name in utils.load_backends(BACKENDS)] }
 
 def home(request):
 	if not request.user.is_authenticated():
@@ -106,6 +113,10 @@ def tasklist_post(request):
 	t.save()
 
 	return { "status": "ok" }
+
+@login_required
+def profile_view(request):
+	return TemplateResponse(request, 'profile.html', { })
 
 def logout_view(request):
 	from django.contrib.auth import logout

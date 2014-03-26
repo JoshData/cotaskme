@@ -46,6 +46,19 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
+TEMPLATE_CONTEXT_PROCESSORS = (
+    "django.contrib.auth.context_processors.auth",
+    "django.core.context_processors.debug",
+    "django.core.context_processors.i18n",
+    "django.core.context_processors.media",
+    "django.core.context_processors.static",
+    "django.core.context_processors.tz",
+    "django.contrib.messages.context_processors.messages",
+    "social.apps.django_app.context_processors.backends",
+    "cotaskme.views.template_context_processor",
+
+)
+
 ROOT_URLCONF = 'cotaskme.urls'
 
 TEMPLATE_DIRS = (
@@ -82,11 +95,12 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 # Login
 
-AUTHENTICATION_BACKENDS = (
-  #'social.backends.twitter.TwitterOAuth', # needs app & config
-  'social.backends.google.GoogleOpenId', # no config needed
+AUTHENTICATION_BACKENDS = [
+  'social.backends.google.GoogleOpenId',
   'django.contrib.auth.backends.ModelBackend',
-)
+]
+# add backends if they are configured
+if 'SOCIAL_AUTH_TWITTER_KEY' in dir(): AUTHENTICATION_BACKENDS.append('social.backends.twitter.TwitterOAuth')
 
 LOGIN_REDIRECT_URL = "/"
 SOCIAL_AUTH_SANITIZE_REDIRECTS = True

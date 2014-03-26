@@ -1,28 +1,15 @@
 {% extends "base.html" %}
 
 {% block body %}
+<div class="container" style="margin-top: -25px; padding-bottom: 50px;">
+    <h1 style="margin: 2em 0;">Let&rsquo;s get things done together.</h1>
 
-<div class="container">
+    <p>Start filling in your new task list by logging in.</p>
 
-    {% if user.is_authenticated %}
-	<p><a href="/new-task-list">New Task List</a></p>
-
-	<div class="row">
-		{% for name, tasklists in groups %}
-		<div class="col-sm-4">
-			<h2>{{name}}</h2>
-
-			<ul>
-			{% for tasklist in tasklists %}
-				<li><a href="{{tasklist.get_absolute_url}}">{{tasklist.title}}</a>
-			{% empty %}
-				<li>You do not have any task lists in this category.</li>
-			{% endfor %}
-			</ul>
-		</div>
-		{% endfor %}
+    <div style="padding-left: 3px">
+	{% for backend, iconclass in login_backends %}
+		<a href="{% url "social:begin" backend %}" class="btn btn-{{backend}}" title="login with {{backend}}"><i class="icon-{{iconclass}}"></i> Login</a>
+	{% endfor %}
 	</div>
-	{% endif %}
-	
 </div>
 {% endblock %}

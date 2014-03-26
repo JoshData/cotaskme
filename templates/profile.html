@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Your Account{% endblock %}
+
+{% block body %}
+<div class="container">
+
+    <h1>Your Account</h1>
+
+    <h2>How You Log In</h2>
+
+    <p>Your account is connected to:</p>
+    <ul>
+    {% for association in backends.associated %}
+    	<li>{{association.provider}}: {% include "social_auth_association_handle.html" %}</li>
+    {% endfor %}
+    </ul>
+
+    {% if backends.not_associated|length > 0 %}
+	    <h2>Associate Another Account</h2>
+	    <ul>
+	    {% for backend in backends.not_associated %}
+	    	<li><a href="{% url "social:begin" backend %}">Associate {{backend}} account...</a></li>
+	    {% endfor %}
+	    </ul>
+    {% endif %}
+
+
+	
+</div>
+{% endblock %}

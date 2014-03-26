@@ -12,6 +12,7 @@
 
         <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css">
         <link rel="stylesheet" href="/static/bootstrap/css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="/static/socialicious/css/socialicious.css">
         <link rel="stylesheet" href="/static/main.css">
         <script src="/static/modernizr-2.6.2-respond-1.1.0.min.js"></script>
 
@@ -29,19 +30,34 @@
               <a class="navbar-brand" href="/">CoTask.me</a>
             </div>
             <div class="navbar-newtask">
-              <form id="nav_post_form" role="form" onsubmit="return do_post()">
-                <input type="text" class="form-control" id="navPostTitle" placeholder="Buy some groceries">
-                <input type="text" class="form-control" id="navPostOutgoing" placeholder="Recipient (Blank = self-tasks)">
-                <button type="submit" class="btn btn-primary btn-sm" style="margin-top:13px">Post It</button>
+              <form class="navbar-form navbar-left" id="nav_post_form" role="form" onsubmit="return do_post()">
+                <div class="form-group">
+                  <label for="navPostTitle" class="sr-only">Task Name:</label>
+                  <input type="text" class="form-control" id="navPostTitle" placeholder="Buy some groceries">
+                </div>
+                <div class="form-group">
+                  <label for="navPostIncoming" class="sr-only">Recipient (blank is task for yourself):</label>
+                  <input type="text" class="form-control" id="navPostIncoming" placeholder="Recipient (Blank = self-tasks)">
+                </div>
+                <div class="form-group"><button type="submit" class="btn btn-primary btn-sm">Post It</button></div>
               </form>
             </div>
-            <div class="navbar-right" style="color: white">
+            <ul class="nav navbar-nav navbar-right">
               {% if not user.is_authenticated %}
-                <a href="{% url "social:begin" "google" %}">Login w/ Google</a>
+                {% for backend, iconclass in login_backends %}
+                  <li><div><a href="{% url "social:begin" backend %}" class="btn btn-{{backend}}" title="login with {{backend}}" style="padding: 5px; margin: 6px;"><i class="icon-{{iconclass}}"></i></a></div></li>
+                {% endfor %}
               {% else %}
-                {{user.username}} | <a href="/logout">logout</a>
+                <li><a href="/profile">
+                  {% if backends.associated|length > 0 %}
+                    {% include "social_auth_association_handle.html" with association=backends.associated.0 %}
+                  {% else %}
+                    {{user.email}}
+                  {% endif %}
+                </a></li>
+                <li><a href="/logout">logout</a></li>
               {% endif %}
-            </div>
+            </ul>
           </div>
         </div>
 
@@ -77,6 +93,7 @@
         <script>$(document).ajaxSend(function(event, xhr, settings) { if (!/^https?:.*/.test(settings.url)) xhr.setRequestHeader("X-CSRFToken", "{{csrf_token}}"); });</script>
 
         <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+        <script src="/static/typeahead.js"></script>
         <script src="/static/main.js"></script>
 
         {% block scripts %}

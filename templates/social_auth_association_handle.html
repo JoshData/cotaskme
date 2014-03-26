@@ -1,0 +1,6 @@
+{% if association.provider == "google" %}
+	{{association.uid}} {# email address #}
+{% endif %}
+{% if association.provider == "twitter" %}
+	{{association.extra_data.access_token.screen_name}}
+{% endif %}
