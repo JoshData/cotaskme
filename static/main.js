@@ -30,45 +30,51 @@ $(function() {
   });
 });
 
-var nav_post_err_title = "Post It";
+var nav_post_err_title = "Post Task";
 
-function post_state(state) {
-	var elems = $('#nav_post_form input, #nav_post_form select, #nav_post_form textarea, #nav_post_form button');
+function post_state(form_id, state) {
+	var elems = $('#' + form_id).find('input, #nav_post_form select, #nav_post_form textarea, #nav_post_form button');
 	elems.prop("disabled", !state);
 }
 
-function do_post() {
-	if ($('#navPostTitle').val() == "") {
-  		show_modal_error(nav_post_err_title, "Type in a title for the task.");
+function do_post_task(form, callback) {
+  var form_id = $(form).attr('id');
+
+  var elem_title = $('#' + form_id + '-title');
+  var elem_recipient = $('#' + form_id + '-recipient');
+  var elem_assigner = $('#' + form_id + '-assigner');
+
+	if (elem_title.val() == "") {
+  		show_modal_error(nav_post_err_title, "Provide a title for the task.");
   		return false;
 	}
 
-  	$.ajax(
-  		"/_post",
-  		{
-  			data: {
-  				title: $('#navPostTitle').val(),
-  				notes: "",
-  				outgoing: "_default",
-  				incoming: "_not_impl"
-  			},
-  			method: "POST",
-  			success: function(res) {
-			  	post_state(true);
-  				if (res.status != "ok") {
-  					show_modal_error(nav_post_err_title, res.msg);
-  					return;
-  				}
+	$.ajax(
+		"/_post",
+		{
+			data: {
+				title: elem_title.val(),
+				notes: "",
+				incoming: elem_recipient.val(),
+				outgoing: elem_assigner.length ? elem_assigner.val() : elem_recipient.val()
+			},
+			method: "POST",
+			success: function(res) {
+		  	post_state(true);
+				if (res.status != "ok") {
+					show_modal_error(nav_post_err_title, res.msg);
+					return;
+				}
 
-				show_modal_error(nav_post_err_title, "Refresh the page please! :) Task has been posted.");
+  			// reset fields to prevent double-submit
+  			elem_title.val('');
 
-				// reset fields to prevent double-submit
-				$('#navPostTitle').val('');
-  			},
-  			error: function() {
-			  	show_modal_error(nav_post_err_title, "There was an error, sorry.");
-			  	post_state(true);
-  			}
-  		});
+        callback(res);
+			},
+			error: function() {
+		  	show_modal_error(nav_post_err_title, "There was an error, sorry.");
+		  	post_state(true);
+			}
+		});
 	return false;
 }

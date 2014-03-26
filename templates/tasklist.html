@@ -15,11 +15,80 @@
 		<h1 id="task_list_title">{{singleton_list.title}}</h1>
 	{% endif %}
 
+	{% if all_lists %}
+		<p>
+			{% for tasklist in all_lists %}
+				{% if not forloop.first %} | {% endif %}
+				<a href="{{tasklist.get_absolute_url}}">{{tasklist.title}}</a>
+			{% endfor %}
+		</p>
+	{% endif %}
+
 	<h2>
 		{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}Incoming{% else %}<a href="{{baseurl}}">Incoming</a>{% endif %}
 		|
 		{% if incoming_outgoing == "outgoing" %}Outgoing{% else %}<a href="{{baseurl}}/outgoing">Outgoing</a>{% endif %}
 	</h2>
+
+	<form id="new-task" role="form" class="row" onsubmit="return do_post_task(this, add_task_callback)">
+		<div class="col-sm-12">
+			<h3>Add a Task</h3>
+		</div>
+
+		{# title #}
+		<div class="col-sm-4">
+			<div class="form-group">
+			  <label for="new-task-title" class="sr-only">Task Name:</label>
+			  <input type="text" class="form-control" id="new-task-title" placeholder="Buy some groceries">
+			</div>
+		</div>
+
+		{# recipient #}
+		{% if incoming_outgoing == "outgoing" %}
+		<div class="col-sm-3">
+			<div class="form-group">
+			  <label for="new-task-recipient" class="sr-only">Assign to:</label>
+			  <input type="text" class="form-control" id="new-task-recipient" placeholder="Recipient&rsquo;s name">
+			</div>
+		</div>
+		{% elif singleton_list %}
+			<input type="hidden" id="new-task-recipient" value="{{singleton_list.id}}"/>
+		{% else %}
+		<div class="col-sm-3">
+			<div class="form-group">
+			  <label for="new-task-recipient" class="sr-only">Add to:</label>
+			  <select class="form-control" id="new-task-recipient">
+			  	{% for tasklist in all_lists %}
+			  		<option value="{{tasklist.id}}">{{tasklist.title}}</option>
+			  	{% endfor %}
+			  </select>
+			</div>
+		</div>
+		{% endif %}
+
+		{# assigned by - if user owns multiple lists #}
+		{% if incoming_outgoing == "outgoing" %}
+		{% if singleton_list %}
+			<input type="hidden" id="new-task-assigner" value="{{singleton_list.id}}"/>
+		{% else %}
+		<div class="col-sm-3">
+			<div class="form-group">
+			  <label for="new-task-assigner" class="sr-only">Assigned by:</label>
+			  <select class="form-control" id="new-task-assigner">
+			  	{% for tasklist in all_lists %}
+			  		<option value="{{tasklist.id}}">From: {{tasklist.title}}</option>
+			  	{% endfor %}
+			  </select>
+			</div>
+		</div>
+		{% endif %}
+		{% endif %}
+
+		{# submit #}
+		<div class="col-sm-2">
+			<div class="form-group"><button type="submit" class="btn btn-primary btn-sm">Post Task</button></div>
+		</div>
+	</form>
 
 	{% for groupid, groupname, tasks in task_groups %}
 		<div id="tasklist-group-{{groupid}}" class="tasklist-group" {% if tasks|length == 0 %}style="display: none"{% endif %}>
@@ -44,26 +113,20 @@
 		<div class="tasklist-item-animation-placeholder"></div>
 
 		{% for task in tasks %}
-		<div id="tasklist-item-{{task.id}}" class="row tasklist-item {% if forloop.counter|divisibleby:2 %}even{% endif %}">
-			<div class="col-sm-6 col-md-7">
-				{{task.title}}
-			</div>
-			<div class="col-sm-3">
-				{% if task.creator != user %}
-					{{task.creator}}
-				{% else %}
-					<i>yourself</i>
-				{% endif %}
-			</div>
-			<div class="col-sm-3 col-md-2">
-				{% for curstate, newstate, verb in task.state_matrix %}
-					<a href="#" onclick="return change_task_state({{task.id}}, {{newstate}});" class="task-change-state task-change-state-from-{{curstate}} task-change-state-{{newstate}} glyphicon glyphicon-{{verb.1}}" title="{{verb.0}}"></a>
-				{% endfor %}
-			</div>
-		</div>
+			{% include "task.html" %}
 		{% endfor %}
 		</div>
 	{% endfor %}
+
+	{% if no_tasks %}
+	<p id="no_tasks">
+		{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}
+			No tasks have been assigned to you yet. Why not get started by giving yourself something easy to do?
+		{% else %}
+			You have not assigned any tasks to anyone else yet.
+		{% endif %}
+	</p>
+	{% endif %}
 </div>
 
 {% endblock %}
@@ -172,6 +235,16 @@
 		}
 
 		do_action({ action: "task-state", task: task_id, state: new_state }, "change state", on_task_state_changed);
+	}
+
+	function add_task_callback(res) {
+		// we're given the HTML to add to the DOM
+		var new_node = $(res.task_html);
+		new_node.hide()
+		var container = $("#tasklist-group-" + res.state);
+		var placeholder = container.find('.tasklist-item-animation-placeholder');
+		new_node.insertAfter(placeholder);
+		new_node.slideDown();
 	}
 </script>
 {% endblock %}

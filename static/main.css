@@ -44,6 +44,12 @@ h3 {
 	    background-color: #eee;
 	}
 
+/* TASK LIST */
+
+#no_tasks {
+	margin: 3em 0;
+}
+
 .tasklist-admin-actions {
 	margin: 0;
 	font-size: 80%;

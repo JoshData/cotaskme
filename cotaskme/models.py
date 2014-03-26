@@ -145,6 +145,11 @@ class Task(models.Model):
         """Creates a new dependency for the Task posted to another TaskList."""
         return Task.new(user, self.incoming, incoming, self)
 
+    def add_state_matrix_for(self, user):
+        self.state_matrix = []
+        for old_state, new_state in self.get_state_matrix(user):
+            self.state_matrix.append( (old_state, new_state, TASK_STATE_VERBS[(old_state, new_state)]) )
+
     def get_state_matrix(self, user):
         """Which states can this user change the state of this task to?
         Note that he might be an owner of both the outgoing and incoming tasklists.

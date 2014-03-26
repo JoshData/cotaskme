@@ -3,7 +3,7 @@ from django.http import HttpResponseForbidden
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 
-from cotaskme.models import TaskList, Task, TASK_STATE_NAMES, TASK_STATE_VERBS
+from cotaskme.models import TaskList, Task, TASK_STATE_NAMES
 from cotaskme.utils import json_response
 
 def template_context_processor(request):
@@ -56,9 +56,7 @@ def tasklist(request, slug=None, which_way=None):
 	tasks = tasks.order_by('-created')
 	for task in tasks:
 		# what states can this user move the task into (it depends on what list it came from)
-		task.state_matrix = []
-		for old_state, new_state in task.get_state_matrix(request.user):
-			task.state_matrix.append( (old_state, new_state, TASK_STATE_VERBS[(old_state, new_state)]) )
+		task.add_state_matrix_for(request.user)
 
 	task_groups = [
 		(i, TASK_STATE_NAMES[i], [t for t in tasks if t.state == i])
@@ -70,9 +68,11 @@ def tasklist(request, slug=None, which_way=None):
 	return TemplateResponse(request, 'tasklist.html', {
 		"singleton_list": singleton_list,
 		"admin_list": singleton_list and "admin" in singleton_list.get_user_roles(request.user),
+		"all_lists": tasklists if len(tasklists) > 1 else None,
 		"baseurl": "/tasks" if slug in (None, "") else "/t/" + slug,
 		"incoming_outgoing": which_way,
 		"task_groups": task_groups,
+		"no_tasks": not tasks.exists(),
 		})
 
 @login_required
@@ -102,24 +102,11 @@ def tasklist_action(request):
 @login_required
 @json_response
 def tasklist_post(request):
-	if request.POST.get("outgoing") == "_new":
-		outgoing = TaskList.new(request.user)
-	elif request.POST.get("outgoing") == "_default":
-		tasklists = TaskList.objects.filter(owners=request.user)
-		if len(tasklists) == 0:
-			outgoing = TaskList.new(request.user)
-		else:
-			# TODO: Better default?
-			outgoing = tasklists[0]
-	else:
-		outgoing = get_object_or_404(TaskList, id=request.POST.get("outgoing"))
-		if "admin" not in tl.get_user_roles(request.user):
-			return HttpResponseForbidden()
+	outgoing = get_object_or_404(TaskList, id=request.POST.get("outgoing"))
+	if "admin" not in outgoing.get_user_roles(request.user):
+		return HttpResponseForbidden()
 
-	if request.POST.get("incoming") == "_not_impl":
-		incoming = outgoing
-	else:
-		incoming = get_object_or_404(TaskList, id=request.POST.get("incoming"))
+	incoming = get_object_or_404(TaskList, id=request.POST.get("incoming"))
 	if "post" not in incoming.get_user_roles(request.user):
 		return HttpResponseForbidden()
 
@@ -129,10 +116,15 @@ def tasklist_post(request):
 	# update with initial properties
 	t.title = str(request.POST.get("title")).strip()
 	t.notes = str(request.POST.get("note")).strip()
-	t.autoclose = request.POST.get("autoclose") != None
 	t.save()
 
-	return { "status": "ok" }
+	# render the task for the response
+	from django.template import Context, Template, loader as template_loader
+	t.add_state_matrix_for(request.user)
+	template = template_loader.get_template("task.html")
+	task_html = template.render(Context({ "task": t, "user": request.user }))
+
+	return { "status": "ok", "task_html": task_html, "state": t.state }
 
 @login_required
 def profile_view(request):
