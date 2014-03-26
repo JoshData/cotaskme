@@ -89,6 +89,7 @@ h3 {
 		display: none;
 		margin-right: 3px;
 	}
+		.task-change-state:hover { text-decoration: none; }
 		#tasklist-group-0 .task-change-state-from-0 { display: inline; }
 		#tasklist-group-1 .task-change-state-from-1 { display: inline; }
 		#tasklist-group-2 .task-change-state-from-2 { display: inline; }

@@ -32,7 +32,7 @@
 
 	<form id="new-task" role="form" class="row" onsubmit="return do_post_task(this, add_task_callback)">
 		<div class="col-sm-12">
-			<h3>Add a Task</h3>
+			<h3>{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}Add{% else %}Assign{% endif %} a Task</h3>
 		</div>
 
 		{# title #}
@@ -133,6 +133,12 @@
 
 {% block scripts %}
 <script>
+	$(function() {
+		{% if incoming_outgoing == "outgoing" %}
+		post_task_typehead_init($('#new-task'));
+		{% endif %}
+	});
+
 	{% if singleton_list %}
 	function do_rename() {
 		var elem = $('h1');
@@ -246,13 +252,24 @@
 	}
 
 	function add_task_callback(res) {
+		{% if incoming_outgoing == "outgoing" %}
+		if (res.is_self_task) {
+			show_modal_error(nav_post_err_title, "You assigned this task to yourself. It appears in your 'Incoming' list.");
+			return;
+		}
+		{% endif %}
+
 		// we're given the HTML to add to the DOM
 		var new_node = $(res.task_html);
 		new_node.hide()
 		var container = $("#tasklist-group-" + res.state);
+		container.fadeIn(); // may not be visible if there were no new tasks before
 		var placeholder = container.find('.tasklist-item-animation-placeholder');
 		new_node.insertAfter(placeholder);
 		new_node.slideDown();
+
+		// as soon as we add a task we can hide the "no tasks" paragraph, if it's visible
+		$('#no_tasks').hide();
 	}
 </script>
 {% endblock %}

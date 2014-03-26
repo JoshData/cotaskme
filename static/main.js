@@ -4,8 +4,8 @@ function show_modal_error(title, message) {
 	$('#error_modal').modal({});
 }
 
-$(function() {
-  $('#navPostIncoming').typeahead({
+function post_task_typehead_init(form) {
+  form.find('#' + form.attr('id') + "-recipient").typeahead({
     autoselect: true,
     highlight: true,
   }, {
@@ -28,7 +28,7 @@ $(function() {
         });
     }
   });
-});
+}
 
 var nav_post_err_title = "Post Task";
 
@@ -48,6 +48,11 @@ function do_post_task(form, callback) {
   		show_modal_error(nav_post_err_title, "Provide a title for the task.");
   		return false;
 	}
+
+  if (elem_recipient.val() == "") {
+      show_modal_error(nav_post_err_title, "Type who you want to assign this task to.");
+      return false;
+  }
 
 	$.ajax(
 		"/_post",

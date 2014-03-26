@@ -3,6 +3,8 @@ from django.http import HttpResponseForbidden
 from django.template.response import TemplateResponse
 from django.contrib.auth.decorators import login_required
 
+import re
+
 from cotaskme.models import TaskList, Task, TASK_STATE_NAMES
 from cotaskme.utils import json_response
 
@@ -106,7 +108,16 @@ def tasklist_post(request):
 	if "admin" not in outgoing.get_user_roles(request.user):
 		return HttpResponseForbidden()
 
-	incoming = get_object_or_404(TaskList, id=request.POST.get("incoming"))
+	m = re.match(r".* \[#(\d+)\]$", request.POST.get("incoming", ""))
+	if m:
+		incoming = get_object_or_404(TaskList, id=int(m.group(1)))
+	else:
+		try:
+			id = int(request.POST.get("incoming"))
+		except ValueError:
+			return { "status": "error", "msg": "That is not a recipient we know." }
+		incoming = get_object_or_404(TaskList, id=id)
+		
 	if "post" not in incoming.get_user_roles(request.user):
 		return HttpResponseForbidden()
 
@@ -124,7 +135,7 @@ def tasklist_post(request):
 	template = template_loader.get_template("task.html")
 	task_html = template.render(Context({ "task": t, "user": request.user }))
 
-	return { "status": "ok", "task_html": task_html, "state": t.state }
+	return { "status": "ok", "task_html": task_html, "state": t.state, "is_self_task": (incoming == outgoing) }
 
 @login_required
 def profile_view(request):
@@ -135,9 +146,9 @@ def logout_view(request):
 	logout(request)
 	return redirect("/")
 
+@login_required
 @json_response
 def search_for_recipient(request):
-	return
 	q = str(request.POST["query"])
 	ret = []
 
@@ -147,10 +158,9 @@ def search_for_recipient(request):
 		for h in handles:
 			tasklists = list(TaskList.objects.filter(owners=h.user))
 			tasklists = [tl for tl in tasklists if "post" in tl.get_user_roles(request.user)]
-			if len(tasklists) == 1:
-				ret.append( {"value": tasklists[0].id, "label": h.handle })
-			else:
-				for tl in tasklists:
-					ret.append( {"value": tl.id, "label": h.handle + " - " + tl.title })
+			for tl in tasklists:
+				label = h.handle
+				if len(tasklists) > 1: label += " - " + tl.title
+				ret.append( {"value": label + " [#" + str(tl.id) + "]", "label": label })
 
 	return ret
