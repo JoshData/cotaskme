@@ -64,12 +64,15 @@ h3 {
 
 .tasklist-header {
 	font-weight: bold;
+	background-color: black;
+	color: white;
+	padding: 5px 0 5px 0;
 }
 
 .tasklist-item {
 	/* this is a bootstrap row, so don't touch left/right margins */
-	padding-top: 4px;
-	padding-bottom: 4px;
+	padding-top: 8px;
+	padding-bottom: 8px;
 }
 	.tasklist-item:nth-child(odd) {
 		background-color: #EEE;
