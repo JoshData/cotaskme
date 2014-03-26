@@ -36,6 +36,7 @@ def newlist(request):
 	return redirect(tl)
 
 def tasklist(request, slug=None, which_way=None):
+	# Which tasklist(s) are we to display?
 	if not slug:
 		# a list must be given in the URL for non-authenticated users
 		if not request.user.is_authenticated():
@@ -43,28 +44,40 @@ def tasklist(request, slug=None, which_way=None):
 
 		# otherwise, no slug means all of my lists
 		tasklists = TaskList.objects.filter(owners=request.user)
+		roles = set(["admin", "post", "observe"])
 	else:
 		# view a particular task list, if permissions allow it
 		tl = get_object_or_404(TaskList, slug=slug)
 		if len(tl.get_user_roles(request.user)) == 0: return HttpResponseForbidden()
 		tasklists = [tl]
+		roles = tl.get_user_roles(request.user)
 
+	# Which tasks can the user view?
 	tasks = Task.objects.all()
 	if which_way in ("incoming", None):
 		tasks = tasks.filter(incoming__in=tasklists)
 	elif which_way == "outgoing":
 		tasks = tasks.filter(outgoing__in=tasklists).exclude(incoming__in=tasklists)
+		if "admin" not in roles: return HttpResponseForbidden()
+	if "observe" not in roles:
+		# this user can only see what *he* has posted to the list
+		if not request.user.is_authenticated():
+			tasks = tasks.none() # nothing to see
+		else:
+			tasks = tasks.filter(creator=request.user)
 
+	# Prepare tasks for rendering.
 	tasks = tasks.order_by('-created')
 	for task in tasks:
-		# what states can this user move the task into (it depends on what list it came from)
-		task.add_state_matrix_for(request.user)
+		task.add_state_matrix_for(request.user) # what states can this user move the task into
 
+	# Group tasks by current state.
 	task_groups = [
 		(i, TASK_STATE_NAMES[i], [t for t in tasks if t.state == i])
 		for i in range(len(TASK_STATE_NAMES))
 	]
 
+	# Are we looking at a single list?
 	singleton_list = tasklists[0] if len(tasklists) == 1 else None
 
 	return TemplateResponse(request, 'tasklist.html', {
@@ -74,7 +87,9 @@ def tasklist(request, slug=None, which_way=None):
 		"baseurl": "/tasks" if slug in (None, "") else "/t/" + slug,
 		"incoming_outgoing": which_way,
 		"task_groups": task_groups,
+		"roles": roles,
 		"no_tasks": not tasks.exists(),
+		"my_lists": TaskList.objects.filter(owners=request.user) if request.user.is_authenticated() else TaskList.objects.none(), # for assigning tasks
 		})
 
 @login_required
@@ -101,13 +116,18 @@ def tasklist_action(request):
 
 	return { "status": "ok" }
 
-@login_required
 @json_response
 def tasklist_post(request):
-	outgoing = get_object_or_404(TaskList, id=request.POST.get("outgoing"))
-	if "admin" not in outgoing.get_user_roles(request.user):
-		return HttpResponseForbidden()
+	# the "outgoing" (assigner) list
+	if request.user.is_authenticated():
+		outgoing = get_object_or_404(TaskList, id=request.POST.get("outgoing"))
+		if "admin" not in outgoing.get_user_roles(request.user):
+			return HttpResponseForbidden()
+	else:
+		# this is an anonymous task
+		outgoing = None
 
+	# the incoming (asignee) list
 	m = re.match(r".* \[#(\d+)\]$", request.POST.get("incoming", ""))
 	if m:
 		incoming = get_object_or_404(TaskList, id=int(m.group(1)))
@@ -117,7 +137,7 @@ def tasklist_post(request):
 		except ValueError:
 			return { "status": "error", "msg": "That is not a recipient we know." }
 		incoming = get_object_or_404(TaskList, id=id)
-		
+
 	if "post" not in incoming.get_user_roles(request.user):
 		return HttpResponseForbidden()
 
@@ -127,6 +147,8 @@ def tasklist_post(request):
 	# update with initial properties
 	t.title = str(request.POST.get("title")).strip()
 	t.notes = str(request.POST.get("note")).strip()
+	if not request.user.is_authenticated():
+		t.metadata = { "owner_email": request.POST.get("assigner_email") }
 	t.save()
 
 	# render the task for the response

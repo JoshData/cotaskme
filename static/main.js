@@ -43,6 +43,7 @@ function do_post_task(form, callback) {
   var elem_title = $('#' + form_id + '-title');
   var elem_recipient = $('#' + form_id + '-recipient');
   var elem_assigner = $('#' + form_id + '-assigner');
+  var elem_assigner_email = $('#' + form_id + '-assigner-email');
 
 	if (elem_title.val() == "") {
   		show_modal_error(nav_post_err_title, "Provide a title for the task.");
@@ -61,7 +62,8 @@ function do_post_task(form, callback) {
 				title: elem_title.val(),
 				notes: "",
 				incoming: elem_recipient.val(),
-				outgoing: elem_assigner.length ? elem_assigner.val() : elem_recipient.val()
+        outgoing: elem_assigner.length ? elem_assigner.val() : elem_recipient.val(),
+        assigner_email: elem_assigner_email.val()
 			},
 			method: "POST",
 			success: function(res) {

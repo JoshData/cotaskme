@@ -24,11 +24,14 @@
 		</p>
 	{% endif %}
 
+	{% if "admin" in roles %}
+	{# only the admin of a list can see outgoing tasks #}
 	<h2>
 		{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}Incoming{% else %}<a href="{{baseurl}}">Incoming</a>{% endif %}
 		|
 		{% if incoming_outgoing == "outgoing" %}Outgoing{% else %}<a href="{{baseurl}}/outgoing">Outgoing</a>{% endif %}
 	</h2>
+	{% endif %}
 
 	<form id="new-task" role="form" class="row" onsubmit="return do_post_task(this, add_task_callback)">
 		<div class="col-sm-12">
@@ -45,42 +48,53 @@
 
 		{# recipient #}
 		{% if incoming_outgoing == "outgoing" %}
-		<div class="col-sm-3">
-			<div class="form-group">
-			  <label for="new-task-recipient" class="sr-only">Assign to:</label>
-			  <input type="text" class="form-control" id="new-task-recipient" placeholder="Recipient&rsquo;s name">
+			{# when I'm looking at my outgoing list, prompt for who the receipient is #}
+			<div class="col-sm-3">
+				<div class="form-group">
+				  <label for="new-task-recipient" class="sr-only">Assign to:</label>
+				  <input type="text" class="form-control" id="new-task-recipient" placeholder="Recipient&rsquo;s name">
+				</div>
 			</div>
-		</div>
 		{% elif singleton_list %}
+			{# when I'm looking at my or someone else's incoming list, the recipient is the list I'm looking at #}
 			<input type="hidden" id="new-task-recipient" value="{{singleton_list.id}}"/>
 		{% else %}
-		<div class="col-sm-3">
-			<div class="form-group">
-			  <label for="new-task-recipient" class="sr-only">Add to:</label>
-			  <select class="form-control" id="new-task-recipient">
-			  	{% for tasklist in all_lists %}
-			  		<option value="{{tasklist.id}}">{{tasklist.title}}</option>
-			  	{% endfor %}
-			  </select>
+			{# if the user has multiple lists and is looking at his all-lists page, ask which list to add to #}
+			<div class="col-sm-3">
+				<div class="form-group">
+				  <label for="new-task-recipient" class="sr-only">Add to:</label>
+				  <select class="form-control" id="new-task-recipient">
+				  	{% for tasklist in all_lists %}
+				  		<option value="{{tasklist.id}}">{{tasklist.title}}</option>
+				  	{% endfor %}
+				  </select>
+				</div>
 			</div>
-		</div>
 		{% endif %}
 
-		{# assigned by - if user owns multiple lists #}
-		{% if incoming_outgoing == "outgoing" %}
-		{% if singleton_list %}
-			<input type="hidden" id="new-task-assigner" value="{{singleton_list.id}}"/>
-		{% else %}
-		<div class="col-sm-3">
-			<div class="form-group">
-			  <label for="new-task-assigner" class="sr-only">Assigned by:</label>
-			  <select class="form-control" id="new-task-assigner">
-			  	{% for tasklist in all_lists %}
-			  		<option value="{{tasklist.id}}">From: {{tasklist.title}}</option>
-			  	{% endfor %}
-			  </select>
+		{# assigned by - if user owns multiple lists or we're looking at a task list we don't own #}
+		{% if incoming_outgoing == "outgoing" or "admin" not in roles %}
+		{% if not user.is_authenticated %}
+			<div class="col-sm-3">
+				<div class="form-group">
+				  <input type="hidden" id="new-task-assigner" value="_not_logged_in"/>
+				  <label for="new-task-assigner" class="sr-only">Your email address (optional):</label>
+				  <input type="text" class="form-control" id="new-task-assigner-email" placeholder="your email address (optional)">
+				</div>
 			</div>
-		</div>
+		{% elif my_lists|length == 1 %}
+			<input type="hidden" id="new-task-assigner" value="{{my_lists.0.id}}"/>
+		{% else %}
+			<div class="col-sm-3">
+				<div class="form-group">
+				  <label for="new-task-assigner" class="sr-only">Assigned by:</label>
+				  <select class="form-control" id="new-task-assigner">
+				  	{% for tasklist in my_lists %}
+				  		<option value="{{tasklist.id}}">From: {{tasklist.title}}</option>
+				  	{% endfor %}
+				  </select>
+				</div>
+			</div>
 		{% endif %}
 		{% endif %}
 
@@ -118,7 +132,7 @@
 		</div>
 	{% endfor %}
 
-	{% if no_tasks %}
+	{% if no_tasks and "admin" in roles %}
 	<p id="no_tasks">
 		{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}
 			No tasks have been assigned to you yet. Why not get started by giving yourself something easy to do?

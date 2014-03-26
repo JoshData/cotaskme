@@ -24,7 +24,7 @@ TASK_STATE_VERBS = {
     (1, 3): ("Close", "ok"),
     (2, 0): ("Mark as New", "step-backward"),
     (2, 1): ("Return to Started", "asterisk"),
-    (2, 3): ("Close", "remove"),
+    (2, 3): ("Close", "ok"),
     (3, 0): ("Mark as New", "asterisk"),
     (3, 1): ("Return to Started", "step-backward"),
     (3, 2): ("Return to Finished", "backward"),
@@ -100,9 +100,9 @@ class Task(models.Model):
     created = models.DateTimeField(auto_now_add=True, db_index=True)
     modified = models.DateTimeField(auto_now=True, db_index=True)
     title = models.CharField(max_length=400)
-    creator = models.ForeignKey(User, db_index=True, related_name="tasks_created")
+    creator = models.ForeignKey(User, blank=True, null=True, db_index=True, related_name="tasks_created")
     notes = models.TextField(blank=True)
-    outgoing = models.ForeignKey(TaskList, db_index=True, related_name="tasks_outgoing", on_delete=models.PROTECT)
+    outgoing = models.ForeignKey(TaskList, blank=True, null=True, db_index=True, related_name="tasks_outgoing", on_delete=models.PROTECT)
     incoming = models.ForeignKey(TaskList, db_index=True, related_name="tasks_incoming", on_delete=models.PROTECT)
     state = models.IntegerField(choices=enumerate(TASK_STATE_NAMES))
     hidden_on_outgoing = models.BooleanField(default=False)
@@ -116,12 +116,14 @@ class Task(models.Model):
     def new(user, outgoing, incoming, dependent=None):
         """Creates a new Task."""
 
-        if "admin" not in outgoing.get_user_roles(user): raise ValueError("User does not have permission to post an outgoing task on the outgoing task list.")
+        if outgoing and "admin" not in outgoing.get_user_roles(user): raise ValueError("User does not have permission to post an outgoing task on the outgoing task list.")
         if "post" not in incoming.get_user_roles(user): raise ValueError("User does not have permission to post a task on the incoming task list.")
+
+        # TODO: validate information on anonymous tasks (outgoing=None)
 
         t = Task()
         t.title = "New Task" if not dependent else dependent.title
-        t.creator = user
+        t.creator = user if user.is_authenticated() else None
         t.notes = "" if not dependent else dependent.notes
         t.outgoing = outgoing
         t.incoming = incoming
@@ -132,8 +134,8 @@ class Task(models.Model):
         e.task = t
         e.event_data = {
             "type": "created",
-            "user": user.id,
-            "outgoing": outgoing.id,
+            "user": user.id if user.is_authenticated() else "anonymous",
+            "outgoing": outgoing.id if outgoing else None,
             "incoming": incoming.id,
             "dependent": 0  if not dependent else dependent.id,
         }
@@ -155,7 +157,7 @@ class Task(models.Model):
         Note that he might be an owner of both the outgoing and incoming tasklists.
         Here we prevent transitions directly between 0/1 and 3, which may or may not be desirable."""
         out_roles = self.incoming.get_user_roles(user)
-        in_roles = self.outgoing.get_user_roles(user)
+        in_roles = self.outgoing.get_user_roles(user) if self.outgoing else set() # might be an anonymous task
         ret = set()
         if "admin" in out_roles:
             for s1 in (0, 1, 2):
@@ -188,7 +190,7 @@ class Task(models.Model):
         # check permissions
         if user:
             out_roles = self.incoming.get_user_roles(user)
-            in_roles = self.outgoing.get_user_roles(user)
+            in_roles = self.outgoing.get_user_roles(user) if self.outgoing else set() # might be an anonymous task
             if self.state in (0, 1, 2) and new_state in (0, 1, 2) and "admin" not in out_roles:
                 raise ValueError("Only a user that this task is incoming for can make that state change.")
             if self.state in (2, 3) and new_state in (2, 3) and "admin" not in in_roles:
