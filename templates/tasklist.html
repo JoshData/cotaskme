@@ -10,47 +10,51 @@
 		{% if incoming_outgoing == "outgoing" %}Outgoing{% else %}<a href="{{baseurl}}/outgoing">Outgoing</a>{% endif %}
 	</h2>
 
-	<div class="row tasklist-header">
-		<div class="col-xs-7">
-			Task
-		</div>
-		<div class="col-xs-3 hidden-xs">
-			{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}
-				Sent by
-			{% else %}
-				Assigned to
-			{% endif %}
-		</div>
-		<div class="col-xs-2 hidden-xs">
-			Status
-		</div>
-	</div>
+	{% for groupid, groupname, tasks in task_groups %}
+		<div id="tasklist-group-{{groupid}}" class="tasklist-group" {% if tasks|length == 0 %}style="display: none"{% endif %}>
+		<h3>{{groupname}}</h3>
 
-	{% for task in tasks %}
-	<div class="row tasklist-item {% if forloop.counter|divisibleby:2 %}even{% endif %}">
-		<div class="col-sm-7">
-			{{task.title}}
+		<div class="row tasklist-header">
+			<div class="col-xs-6 col-md-7">
+				Task
+			</div>
+			<div class="col-xs-3 hidden-xs">
+				{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}
+					Sent by
+				{% else %}
+					Assigned to
+				{% endif %}
+			</div>
+			<div class="col-xs-3 col-md-2 hidden-xs">
+				Action
+			</div>
 		</div>
-		<div class="col-sm-3">
-			{% if task.creator != user %}
-				{{task.creator}}
-			{% else %}
-				<i>yourself</i>
-			{% endif %}
+
+		<div class="tasklist-item-animation-placeholder"></div>
+
+		{% for task in tasks %}
+		<div id="tasklist-item-{{task.id}}" class="row tasklist-item {% if forloop.counter|divisibleby:2 %}even{% endif %}">
+			<div class="col-sm-6 col-md-7">
+				{{task.title}}
+			</div>
+			<div class="col-sm-3">
+				{% if task.creator != user %}
+					{{task.creator}}
+				{% else %}
+					<i>yourself</i>
+				{% endif %}
+			</div>
+			<div class="col-sm-3 col-md-2">
+				{% for curstate, newstate, verb in task.state_matrix %}
+					<a href="#" onclick="return change_task_state({{task.id}}, {{newstate}});" class="task-change-state task-change-state-from-{{curstate}} task-change-state-{{newstate}} glyphicon glyphicon-{{verb.1}}" title="{{verb.0}}"></a>
+				{% endfor %}
+			</div>
 		</div>
-		<div class="col-sm-2">
-			{{task.get_state_display}}
-			{% for state, verb in task.next_states %}
-				<a href="#" onclick="return change_task_state({{task.id}}, {{state}});" class="task-change-state task-change-state-{{state}}" title="{{verb.0}}">
-					{{verb.1}}
-				</a>
-			{% endfor %}
+		{% endfor %}
 		</div>
-	</div>
-	{% empty %}
-		<p style="margin-top: 1em;">No tasks. Congratulations!</p>
 	{% endfor %}
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -97,7 +101,66 @@
 	}
 
 	function change_task_state(task_id, new_state) {
-		do_action({ action: "task-state", task: task_id, state: new_state }, "change state", function() { window.location.reload() });
+		function on_task_state_changed() {
+			// animate this task into its new position
+			
+			var elem = $('#tasklist-item-' + task_id);
+			var old_container = elem.parent(".tasklist-group");
+			var new_container = $("#tasklist-group-" + new_state);
+			var old_placeholder = old_container.find('.tasklist-item-animation-placeholder');
+			var new_placeholder = new_container.find('.tasklist-item-animation-placeholder');
+
+			// create a placeholder for where the task will be inserted
+			// to create some empty space in the list
+			elem.css({position: 'relative', top: 0});
+			new_placeholder.css({ height: elem.outerHeight() });
+			if (new_container.is(":visible")) {
+				// gracefully create a spot for the item to land in
+				new_placeholder.slideDown(do_anim);
+
+			// ensure the target group is visible --- it's not visible if there are
+			// no tasks in that category
+			} else if (new_container.index() > old_container.index()) {
+				new_placeholder.show();
+				new_container.slideDown('fast', do_anim);
+			} else {
+				new_placeholder.show();
+				new_container.show();
+				do_anim();
+			}
+
+			function do_anim() {
+				// compute the target location for the task on the page, the location
+				// of the placeholder
+				var dy = new_placeholder.offset().top - elem.offset().top;
+				elem.animate({ top: dy }, function() {
+					// before moving the task into the right place in the DOM, show the
+					// placeholder in the old list to avoid a jump
+					old_placeholder.insertAfter(elem);
+					old_placeholder.show();
+					old_placeholder.css({ height: elem.outerHeight() });
+
+					// move the task into the div for the target state and reset its
+					// positioning so it displays as normal
+					elem.insertAfter(new_placeholder);
+					elem.css({ position: 'auto', top: 'auto' });
+
+					// get rid of the placeholder there now that the task will fill that space exactly
+					new_placeholder.hide();
+
+					// if the old group has no more tasks, fade it out
+					if (old_container.find('.tasklist-item').length == 0)
+						old_container.slideUp(function() { old_placeholder.hide(); });
+					else
+						// get rid of the placeholder in the old list gracefully
+						old_placeholder.slideUp();
+
+				});
+			}
+
+		}
+
+		do_action({ action: "task-state", task: task_id, state: new_state }, "change state", on_task_state_changed);
 	}
 </script>
 {% endblock %}

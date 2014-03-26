@@ -16,18 +16,18 @@ TASK_LIST_SLUG_CHARS = TASK_LIST_SLUG_AUTO_CHARS + TASK_LIST_SLUG_OTHER_CHARS
 TASK_LIST_SLUG_CHAR_DESCRIPTION = "letters, numbers, dashes, and underscores"
 TASK_STATE_NAMES = ("New", "Started", "Finished", "Closed")
 TASK_STATE_VERBS = {
-    (0, 1): ("Start", "※"),
-    (0, 2): ("Finish", "✓"),
-    (0, 3): ("Close", "X"),
-    (1, 0): ("Mark as New", "↩"),
-    (1, 2): ("Finish", "✓"),
-    (1, 3): ("Close", "X"),
-    (2, 0): ("Mark as New", "↩"),
-    (2, 1): ("Return to Started", "O"),
-    (2, 3): ("Close", "X"),
-    (3, 0): ("Mark as New", "N"),
-    (3, 1): ("Return to Started" "O"),
-    (3, 2): ("Return to Finished", "↩"),
+    (0, 1): ("Start", "play"),
+    (0, 2): ("Finish", "ok"),
+    (0, 3): ("Close", "remove"),
+    (1, 0): ("Mark as New", "step-backward"),
+    (1, 2): ("Finish", "ok"),
+    (1, 3): ("Close", "remove"),
+    (2, 0): ("Mark as New", "step-backward"),
+    (2, 1): ("Return to Started", "asterisk"),
+    (2, 3): ("Close", "remove"),
+    (3, 0): ("Mark as New", "asterisk"),
+    (3, 1): ("Return to Started", "step-backward"),
+    (3, 2): ("Return to Finished", "backward"),
 }
 
 class TaskList(models.Model):
@@ -141,21 +141,27 @@ class Task(models.Model):
         """Creates a new dependency for the Task posted to another TaskList."""
         return Task.new(user, self.incoming, incoming, self)
 
-    def get_next_states(self, user):
+    def get_state_matrix(self, user):
         """Which states can this user change the state of this task to?
         Note that he might be an owner of both the outgoing and incoming tasklists.
         Here we prevent transitions directly between 0/1 and 3, which may or may not be desirable."""
         out_roles = self.incoming.get_user_roles(user)
         in_roles = self.outgoing.get_user_roles(user)
         ret = set()
-        if self.state in (0, 1, 2) and "admin" in out_roles:
-            for s in (0, 1, 2): ret.add(s)
-        if self.state in (2, 3) and "admin" in in_roles:
-            for s in (2, 3): ret.add(s)
-
-        # SIMPLE MODE: Don't use the Started state.
-        if 1 in ret: ret.remove(1)
-
+        if "admin" in out_roles:
+            for s1 in (0, 1, 2):
+                for s2 in (0, 1, 2):
+                    if s1 == s2: continue
+                    # if a user can both finish and close a task, give the option to close instead of finish
+                    if "admin" in in_roles and s1 != 2 and s2 == 2: s2 = 3
+                    ret.add((s1, s2))
+        if "admin" in in_roles:
+            for s1 in (2, 3):
+                for s2 in (2, 3):
+                    if s1 == s2: continue
+                    # if a user can both finish and close a task, don't give the option to return to finish
+                    if "admin" in out_roles and s1 == 3 and s2 == 2: s2 = 1
+                    ret.add((s1, s2))
         return sorted(s for s in ret if s != self.state)
 
     def change_state(self, user, new_state):

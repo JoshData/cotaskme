@@ -1,3 +1,14 @@
+@import url(http://fonts.googleapis.com/css?family=Armata);
+@import url(http://fonts.googleapis.com/css?family=Abel);
+
+body {
+	font-family: 'Armata', sans-serif;
+}
+
+h1 {
+	font-family: 'Abel', sans-serif;
+}
+
 .tasklist-header {
 	font-weight: bold;
 }
@@ -7,13 +18,25 @@
 	padding-top: 4px;
 	padding-bottom: 4px;
 }
-	.tasklist-item.even {
+	.tasklist-item:nth-child(odd) {
 		background-color: #EEE;
+	}
+	.tasklist-item:nth-child(even) {
+		background-color: #F7F7F7;
 	}
 	.tasklist-item:hover {
 		background-color: #F9F9F9;
 	}
 
-.form-control {
-float:left;width:300px;height:30px;padding:6px 12px;margin:13px 15px 0 0;font-size:12px;
-}
+	.tasklist-item-animation-placeholder {
+		display: none;
+	}
+
+	.task-change-state {
+		display: none;
+		margin-right: 3px;
+	}
+		#tasklist-group-0 .task-change-state-from-0 { display: inline; }
+		#tasklist-group-1 .task-change-state-from-1 { display: inline; }
+		#tasklist-group-2 .task-change-state-from-2 { display: inline; }
+		#tasklist-group-3 .task-change-state-from-3 { display: inline; }		

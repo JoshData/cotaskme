@@ -47,12 +47,19 @@ def tasklist(request, slug=None, which_way=None):
 	tasks = tasks.order_by('-created')
 	for task in tasks:
 		# what states can this user move the task into (it depends on what list it came from)
-		task.next_states = [(s, TASK_STATE_VERBS[(task.state, s)]) for s in task.get_next_states(request.user)]
+		task.state_matrix = []
+		for old_state, new_state in task.get_state_matrix(request.user):
+			task.state_matrix.append( (old_state, new_state, TASK_STATE_VERBS[(old_state, new_state)]) )
+
+	task_groups = [
+		(i, TASK_STATE_NAMES[i], [t for t in tasks if t.state == i])
+		for i in range(len(TASK_STATE_NAMES))
+	]
 
 	return TemplateResponse(request, 'tasklist.html', {
 		"baseurl": "/tasks" if slug in (None, "") else "/" + slug,
 		"incoming_outgoing": which_way,
-		"tasks": tasks,
+		"task_groups": task_groups,
 		})
 
 @login_required
