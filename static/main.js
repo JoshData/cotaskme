@@ -4,6 +4,32 @@ function show_modal_error(title, message) {
 	$('#error_modal').modal({});
 }
 
+$(function() {
+  $('#navPostIncoming').typeahead({
+    autoselect: true,
+    highlight: true,
+  }, {
+    name: 'source',
+    templates: {
+      suggestion: function(item) {
+        return $('<div/>').text(item.label).html();
+      }
+    },
+    source: function(query, cb) {
+      $.ajax(
+        "/_search_for_recipient",
+        {
+          data: { query: query },
+          method: "POST",
+          success: function(res) { cb(res); },
+          error: function() {
+            cb([]);
+          }
+        });
+    }
+  });
+});
+
 var nav_post_err_title = "Post It";
 
 function post_state(state) {

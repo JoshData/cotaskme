@@ -129,3 +129,23 @@ def logout_view(request):
 	from django.contrib.auth import logout
 	logout(request)
 	return redirect("/")
+
+@json_response
+def search_for_recipient(request):
+	return
+	q = str(request.POST["query"])
+	ret = []
+
+	from cotaskme.models import UserHandle
+	handles = UserHandle.objects.filter(handle__startswith=q).select_related("user")
+	if len(handles) < 20:
+		for h in handles:
+			tasklists = list(TaskList.objects.filter(owners=h.user))
+			tasklists = [tl for tl in tasklists if "post" in tl.get_user_roles(request.user)]
+			if len(tasklists) == 1:
+				ret.append( {"value": tasklists[0].id, "label": h.handle })
+			else:
+				for tl in tasklists:
+					ret.append( {"value": tl.id, "label": h.handle + " - " + tl.title })
+
+	return ret

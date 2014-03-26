@@ -29,6 +29,8 @@
             <div class="navbar-header">
               <a class="navbar-brand" href="/">CoTask.me</a>
             </div>
+
+            {% comment %}
             <div class="navbar-newtask">
               <form class="navbar-form navbar-left" id="nav_post_form" role="form" onsubmit="return do_post()">
                 <div class="form-group">
@@ -42,6 +44,8 @@
                 <div class="form-group"><button type="submit" class="btn btn-primary btn-sm">Post It</button></div>
               </form>
             </div>
+            {% endcomment %}
+            
             <ul class="nav navbar-nav navbar-right">
               {% if not user.is_authenticated %}
                 {% for backend, iconclass in login_backends %}

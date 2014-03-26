@@ -9,6 +9,33 @@ h1 {
 	font-family: 'Abel', sans-serif;
 }
 
+.navbar-newtask form {
+	padding-top: 3px;
+	padding-left: 100px;
+}
+.navbar-newtask input {
+	height: auto;
+	padding: 3px 6px;
+	font-size: 12px;
+}
+.navbar-newtask .btn {
+	height: 26px;
+}
+
+.tt-dropdown-menu {
+    background-color: #fff;
+    min-width: 250px;
+    border-left: 1px solid #DDD;
+    border-bottom: 1px solid #DDD;
+    border-right: 1px solid #DDD;
+}
+	.tt-suggestion {
+	    padding: 5px;
+	}
+	.tt-suggestion.tt-cursor {
+	    background-color: #eee;
+	}
+
 .tasklist-header {
 	font-weight: bold;
 }
