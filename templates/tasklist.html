@@ -106,11 +106,9 @@
 
 	{% for groupid, groupname, tasks in task_groups %}
 		<div id="tasklist-group-{{groupid}}" class="tasklist-group" {% if tasks|length == 0 %}style="display: none"{% endif %}>
-		<h3>{{groupname}}</h3>
-
 		<div class="row tasklist-header">
 			<div class="col-xs-6 col-md-7">
-				Task
+				{{groupname}}
 			</div>
 			<div class="col-xs-3 hidden-xs">
 				{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}
