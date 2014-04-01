@@ -204,7 +204,7 @@
 	  			method: "POST",
 	  			success: function(res) {
 	  				if (res.status == "ok")
-	  					callback(callback_arg);
+	  					callback(callback_arg, res);
 	  				else
 	  					show_modal_error(err_title, res.msg);
 	  			},
@@ -215,10 +215,15 @@
 	}
 
 	function change_task_state(task_id, new_state) {
-		function on_task_state_changed() {
+		function on_task_state_changed(dummy, response) {
+			var elem = $('#tasklist-item-' + task_id);
+
+			// update the rejected class
+			console.log(response.was_rejected);
+			elem.toggleClass("rejected", response.was_rejected);
+
 			// animate this task into its new position
 			
-			var elem = $('#tasklist-item-' + task_id);
 			var old_container = elem.parent(".tasklist-group");
 			var new_container = $("#tasklist-group-" + new_state);
 			var old_placeholder = old_container.find('.tasklist-item-animation-placeholder');

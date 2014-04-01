@@ -105,6 +105,9 @@ h3 {
 	.tasklist-item:hover {
 		background-color: #F9F9F9;
 	}
+	.tasklist-item.rejected {
+		background-color: #FDD;
+	}
 
 	.tasklist-item-animation-placeholder {
 		display: none;

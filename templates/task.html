@@ -1,4 +1,4 @@
-<div id="tasklist-item-{{task.id}}" class="row tasklist-item">
+<div id="tasklist-item-{{task.id}}" class="row tasklist-item {% if task.was_rejected %}rejected{% endif %}">
 	<div class="col-sm-6 col-md-7">
 		{{task.title}}
 	</div>

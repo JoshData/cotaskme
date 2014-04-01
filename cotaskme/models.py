@@ -14,19 +14,20 @@ TASK_LIST_SLUG_AUTO_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy
 TASK_LIST_SLUG_OTHER_CHARS = "-_"
 TASK_LIST_SLUG_CHARS = TASK_LIST_SLUG_AUTO_CHARS + TASK_LIST_SLUG_OTHER_CHARS
 TASK_LIST_SLUG_CHAR_DESCRIPTION = "letters, numbers, dashes, and underscores"
-TASK_STATE_NAMES = ("New", "Started", "Finished", "Closed")
+TASK_STATE_NAMES = ("Inbox", "Active", "Finished", "Closed")
 TASK_STATE_VERBS = {
-    (0, 1): ("Start", "play"),
+    (0, 1): ("Accept", "arrow-down"),
     (0, 2): ("Finish", "ok"),
-    (0, 3): ("Close", "ok"),
-    (1, 0): ("Mark as New", "step-backward"),
+    (0, 3, True): ("Reject", "remove"), # if the task is not self-assigned
+    (0, 3): ("Close", "remove"), # if the task is self-assigned
+    (1, 0): ("Move to Inbox", "envelope"),
     (1, 2): ("Finish", "ok"),
     (1, 3): ("Close", "ok"),
-    (2, 0): ("Mark as New", "step-backward"),
-    (2, 1): ("Return to Started", "asterisk"),
+    (2, 0): ("Move to Inbox", "envelope"),
+    (2, 1): ("Return to Active", "repeat"),
     (2, 3): ("Close", "ok"),
-    (3, 0): ("Mark as New", "asterisk"),
-    (3, 1): ("Return to Started", "step-backward"),
+    (3, 0): ("Move to Inbox", "envelope"),
+    (3, 1): ("Return to Active", "repeat"),
     (3, 2): ("Return to Finished", "backward"),
 }
 
@@ -147,7 +148,12 @@ class Task(models.Model):
         t.notes = "" if not dependent else dependent.notes
         t.outgoing = outgoing
         t.incoming = incoming
-        t.state = 0
+        if incoming == outgoing:
+            # Self-assigned tasks start in the Active state.
+            t.state = 1
+        else:
+            # Put the task in the inbox.
+            t.state = 0
         t.save()
 
         e = TaskEvent()
@@ -163,14 +169,18 @@ class Task(models.Model):
 
         return t
 
+    def was_rejected(self):
+        return isinstance(self.metadata, dict) and (self.metadata.get("rejected") == True)
+
     def new_dependency(self, user, incoming):
         """Creates a new dependency for the Task posted to another TaskList."""
         return Task.new(user, self.incoming, incoming, self)
 
     def add_state_matrix_for(self, user):
         self.state_matrix = []
-        for old_state, new_state in self.get_state_matrix(user):
-            self.state_matrix.append( (old_state, new_state, TASK_STATE_VERBS[(old_state, new_state)]) )
+        for transition in self.get_state_matrix(user):
+            verb = TASK_STATE_VERBS[transition]
+            self.state_matrix.append( (transition[0], transition[1], verb) )
 
     def get_state_matrix(self, user):
         """Which states can this user change the state of this task to?
@@ -180,29 +190,40 @@ class Task(models.Model):
         out_roles = self.outgoing.get_user_roles(user) if self.outgoing else set() # might be an anonymous task
         ret = set()
         if "admin" in in_roles:
-            # An admin on the incoming list can move a task between states 0 (new), 1 (started),
+            # An admin on the incoming list can move a task between states 0 (inbox), 1 (active),
             # and 2 (finished). If the user is also an admin on the outgoing list, then instead
-            # of finishing the task, he can close it instead.
+            # of finishing the task, he can close it instead. A user can also move a new task
+            # directly to close to reject it.
             for s1 in (0, 1, 2):
                 for s2 in (0, 1, 2):
                     if s1 == s2: continue
-                    if "admin" in out_roles and s1 != 2 and s2 == 2: s2 = 3
-                    ret.add((s1, s2))
+                    if "admin" in out_roles and s2 == 0:
+                        # self-assigned tasks cannot be moved to the inbox
+                        continue
+                    elif "admin" in out_roles and s1 != 2 and s2 == 2:
+                        ret.add((s1, 3))
+                    else:
+                        ret.add((s1, s2))
+            if "admin" not in out_roles:
+                ret.add((0, 3, True)) # reject
+                ret.add((3, 0)) # un-reject
+
         if "admin" in out_roles:
             # An admin on the outgoing list can move a task between 2 (finished) and 3 (closed).
             # If the user is also an admin on the incoming list, in which case he wasn't given
             # the 'finished' option, then instead of moving from closed to finished move from
-            # closed to started.
+            # closed to active.
             ret.add((2, 3))
             if "admin" not in in_roles:
-                ret.add((3, 2))
+                if not self.was_rejected():
+                    ret.add((3, 2))
             else:
                 ret.add((3, 1))
         return sorted(s for s in ret if s != self.state)
 
     def change_state(self, user, new_state):
         """Changes the state of a task. The incoming owners can move a
-        Task between New, Started, and Finished, and the outgoing owner can
+        Task between Inbox, Active, and Finished, and the outgoing owner can
         move a Task between Finished to Closed. The creator of a Task has
         no special permission if he isn't an owner of either. To reject
         a task's outcome, the outgoing owner should close and start a new
@@ -213,13 +234,19 @@ class Task(models.Model):
         if self.state == new_state: return
 
         # check permissions
+        is_rejection = False
         if user:
-            in_roles = self.incoming.get_user_roles(user)
-            out_roles = self.outgoing.get_user_roles(user) if self.outgoing else set() # might be an anonymous task
-            if self.state in (0, 1, 2) and new_state in (0, 1, 2) and "admin" not in in_roles:
-                raise ValueError("Only a user that this task is incoming for can make that state change.")
-            if self.state in (2, 3) and new_state in (2, 3) and "admin" not in out_roles:
-                raise ValueError("Only a user that this task is outgoing for can make that state change.")
+            for transition in self.get_state_matrix(user):
+                if transition[0] == self.state and transition[1] == new_state:
+                    # This is permitted.
+
+                    # Check if this is a transition that marks the task as rejected.
+                    if len(transition) == 3: is_rejection = transition[2]
+
+                    break # flag that we've found the permitted transition
+            else:
+                # This is not permitted.
+                raise ValueError("You do not have permission to make that change.")
 
         # record change
         e = TaskEvent()
@@ -231,6 +258,17 @@ class Task(models.Model):
             "to": new_state,
         }
         e.save()
+
+        # was this a rejection?
+        if is_rejection:
+            m = self.metadata
+            if not m: m = { }
+            m["rejected"] = True
+            self.metadata = m
+        elif self.was_rejected():
+            m = self.metadata
+            del m["rejected"]
+            self.metadata = m
 
         # make change
         self.state = new_state
