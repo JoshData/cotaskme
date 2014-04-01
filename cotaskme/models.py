@@ -180,19 +180,24 @@ class Task(models.Model):
         out_roles = self.outgoing.get_user_roles(user) if self.outgoing else set() # might be an anonymous task
         ret = set()
         if "admin" in in_roles:
+            # An admin on the incoming list can move a task between states 0 (new), 1 (started),
+            # and 2 (finished). If the user is also an admin on the outgoing list, then instead
+            # of finishing the task, he can close it instead.
             for s1 in (0, 1, 2):
                 for s2 in (0, 1, 2):
                     if s1 == s2: continue
-                    # if a user can both finish and close a task, give the option to close instead of finish
                     if "admin" in out_roles and s1 != 2 and s2 == 2: s2 = 3
                     ret.add((s1, s2))
         if "admin" in out_roles:
-            for s1 in (2, 3):
-                for s2 in (2, 3):
-                    if s1 == s2: continue
-                    # if a user can both finish and close a task, don't give the option to return to finish
-                    if "admin" in in_roles and s1 == 3 and s2 == 2: s2 = 1
-                    ret.add((s1, s2))
+            # An admin on the outgoing list can move a task between 2 (finished) and 3 (closed).
+            # If the user is also an admin on the incoming list, in which case he wasn't given
+            # the 'finished' option, then instead of moving from closed to finished move from
+            # closed to started.
+            ret.add((2, 3))
+            if "admin" not in in_roles:
+                ret.add((3, 2))
+            else:
+                ret.add((3, 1))
         return sorted(s for s in ret if s != self.state)
 
     def change_state(self, user, new_state):
