@@ -1,8 +1,8 @@
 <div id="tasklist-item-{{task.id}}" class="row tasklist-item {% if task.was_rejected %}rejected{% endif %}">
-	<div class="col-sm-6 col-md-7">
+	<div class="col-sm-6 col-md-7 title textualfield">
 		{{task.title}}
 	</div>
-	<div class="col-sm-3 sendby_assignedto">
+	<div class="col-sm-3 sendby-assignedto textualfield">
 		{% if incoming_outgoing == "incoming" %}
 			{% if task.creator == None %}
 				{{task.metadata.owner_email}}

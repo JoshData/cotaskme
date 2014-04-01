@@ -121,4 +121,8 @@ h3 {
 		#tasklist-group-0 .task-change-state-from-0 { display: inline; }
 		#tasklist-group-1 .task-change-state-from-1 { display: inline; }
 		#tasklist-group-2 .task-change-state-from-2 { display: inline; }
-		#tasklist-group-3 .task-change-state-from-3 { display: inline; }		
+		#tasklist-group-3 .task-change-state-from-3 { display: inline; }
+
+	#tasklist-group-3 .tasklist-item .textualfield {
+		text-decoration: line-through;
+	}
