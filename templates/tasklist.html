@@ -26,11 +26,10 @@
 
 	{% if user.is_authenticated %}
 	{# only a logged in user can see outgoing tasks --- either on his own list or tasks assigned to him on other lists #}
-	<h2>
-		{% if incoming_outgoing == "incoming" %}Incoming{% else %}<a href="{{baseurl}}">Incoming</a>{% endif %}
-		|
-		{% if incoming_outgoing == "outgoing" %}Outgoing{% else %}<a href="{{baseurl}}/outgoing">Outgoing</a>{% endif %}
-	</h2>
+	<div id="incoming-outgoing">
+		{% if incoming_outgoing == "incoming" %}<span>Incoming</span>{% else %}<a href="{{baseurl}}">Incoming</a>{% endif %}
+		{% if incoming_outgoing == "outgoing" %}<span>Outgoing</span>{% else %}<a href="{{baseurl}}/outgoing">Outgoing</a>{% endif %}
+	</div>
 	{% endif %}
 
 	{% if can_post_task %}
@@ -101,7 +100,7 @@
 
 		{# submit #}
 		<div class="col-sm-2">
-			<div class="form-group"><button type="submit" class="btn btn-primary btn-sm">Post Task</button></div>
+			<div class="form-group"><button type="submit" class="btn btn-success btn-sm">Post Task</button></div>
 		</div>
 	</form>
 	{% endif %}

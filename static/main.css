@@ -46,6 +46,20 @@ h3 {
 
 /* TASK LIST */
 
+#incoming-outgoing {
+	margin: 0 0 1em 0;
+	text-transform: lowercase;
+}
+	#incoming-outgoing span {
+		background-color: #2b669a;
+		color: white;
+		padding: 3px;
+		border-radius: 3px;
+	}
+	#incoming-outgoing a {
+		padding: 3px;
+	}
+
 #no_tasks {
 	margin: 3em 0;
 }
