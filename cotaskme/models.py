@@ -176,22 +176,22 @@ class Task(models.Model):
         """Which states can this user change the state of this task to?
         Note that he might be an owner of both the outgoing and incoming tasklists.
         Here we prevent transitions directly between 0/1 and 3, which may or may not be desirable."""
-        out_roles = self.incoming.get_user_roles(user)
-        in_roles = self.outgoing.get_user_roles(user) if self.outgoing else set() # might be an anonymous task
+        in_roles = self.incoming.get_user_roles(user)
+        out_roles = self.outgoing.get_user_roles(user) if self.outgoing else set() # might be an anonymous task
         ret = set()
-        if "admin" in out_roles:
+        if "admin" in in_roles:
             for s1 in (0, 1, 2):
                 for s2 in (0, 1, 2):
                     if s1 == s2: continue
                     # if a user can both finish and close a task, give the option to close instead of finish
-                    if "admin" in in_roles and s1 != 2 and s2 == 2: s2 = 3
+                    if "admin" in out_roles and s1 != 2 and s2 == 2: s2 = 3
                     ret.add((s1, s2))
-        if "admin" in in_roles:
+        if "admin" in out_roles:
             for s1 in (2, 3):
                 for s2 in (2, 3):
                     if s1 == s2: continue
                     # if a user can both finish and close a task, don't give the option to return to finish
-                    if "admin" in out_roles and s1 == 3 and s2 == 2: s2 = 1
+                    if "admin" in in_roles and s1 == 3 and s2 == 2: s2 = 1
                     ret.add((s1, s2))
         return sorted(s for s in ret if s != self.state)
 
@@ -209,11 +209,11 @@ class Task(models.Model):
 
         # check permissions
         if user:
-            out_roles = self.incoming.get_user_roles(user)
-            in_roles = self.outgoing.get_user_roles(user) if self.outgoing else set() # might be an anonymous task
-            if self.state in (0, 1, 2) and new_state in (0, 1, 2) and "admin" not in out_roles:
+            in_roles = self.incoming.get_user_roles(user)
+            out_roles = self.outgoing.get_user_roles(user) if self.outgoing else set() # might be an anonymous task
+            if self.state in (0, 1, 2) and new_state in (0, 1, 2) and "admin" not in in_roles:
                 raise ValueError("Only a user that this task is incoming for can make that state change.")
-            if self.state in (2, 3) and new_state in (2, 3) and "admin" not in in_roles:
+            if self.state in (2, 3) and new_state in (2, 3) and "admin" not in out_roles:
                 raise ValueError("Only a user that this task is outgoing for can make that state change.")
 
         # record change
