@@ -7,16 +7,12 @@
 			{% if task.creator == None %}
 				{{task.metadata.owner_email}}
 			{% elif task.creator != user %}
-				<a href="{{task.outgoing.get_absolute_url}}">
-					{{task.creator}}
-				</a>
+				{{task.creator}}
 			{% else %}
 				<i>yourself</i>
 			{% endif %}
 		{% else %}
-			<a href="{{task.incoming.get_absolute_url}}">
-				{{task.incoming.title_for_assigned_to}}
-			</a>
+			{{task.incoming.title_for_assigned_to}}
 		{% endif %}
 	</div>
 	<div class="col-sm-3 col-md-2 tasklist-item-actions">
