@@ -30,6 +30,14 @@ h3 {
 	height: 26px;
 }
 
+@media (min-width: 768px) {
+	#new-task > div {
+		padding-right: 0;
+	}
+}
+#new-task .twitter-typeahead {
+	width: 100%;
+}
 .tt-dropdown-menu {
     background-color: #fff;
     min-width: 250px;
