@@ -54,11 +54,14 @@ def tasklist(request, slug=None, which_way=None):
 
 	# Which tasks can the user view?
 	tasks = Task.objects.all()
-	if which_way in ("incoming", None):
+	if which_way == None: which_way = "incoming" # default view
+	if which_way == "incoming":
 		tasks = tasks.filter(incoming__in=tasklists)
 	elif which_way == "outgoing":
 		tasks = tasks.filter(outgoing__in=tasklists).exclude(incoming__in=tasklists)
 		if "admin" not in roles: return HttpResponseForbidden()
+	else:
+		raise ValueError(which_way)
 	if "observe" not in roles:
 		# this user can only see what *he* has posted to the list
 		if not request.user.is_authenticated():
@@ -69,7 +72,7 @@ def tasklist(request, slug=None, which_way=None):
 	# Prepare tasks for rendering.
 	tasks = tasks.order_by('-created')
 	for task in tasks:
-		task.add_state_matrix_for(request.user) # what states can this user move the task into
+		prepare_for_view(task, request)
 
 	# Group tasks by current state.
 	task_groups = [
@@ -91,6 +94,10 @@ def tasklist(request, slug=None, which_way=None):
 		"no_tasks": not tasks.exists(),
 		"my_lists": TaskList.objects.filter(owners=request.user) if request.user.is_authenticated() else TaskList.objects.none(), # for assigning tasks
 		})
+
+def prepare_for_view(task, request):
+	# what states can this user move the task into
+	task.add_state_matrix_for(request.user)
 
 @login_required
 @json_response
@@ -127,7 +134,7 @@ def tasklist_post(request):
 		# this is an anonymous task
 		outgoing = None
 
-	# the incoming (asignee) list
+	# the incoming (assignee) list
 	m = re.match(r".* \[#(\d+)\]$", request.POST.get("incoming", ""))
 	if m:
 		incoming = get_object_or_404(TaskList, id=int(m.group(1)))
@@ -153,9 +160,13 @@ def tasklist_post(request):
 
 	# render the task for the response
 	from django.template import Context, Template, loader as template_loader
-	t.add_state_matrix_for(request.user)
+	prepare_for_view(t, request)
 	template = template_loader.get_template("task.html")
-	task_html = template.render(Context({ "task": t, "user": request.user }))
+	task_html = template.render(Context({
+		"task": t,
+		"user": request.user,
+		"incoming_outgoing": request.POST.get("view_orientation"),
+	}))
 
 	return { "status": "ok", "task_html": task_html, "state": t.state, "is_self_task": (incoming == outgoing) }
 

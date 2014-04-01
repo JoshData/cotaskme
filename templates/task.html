@@ -2,13 +2,21 @@
 	<div class="col-sm-6 col-md-7">
 		{{task.title}}
 	</div>
-	<div class="col-sm-3">
-		{% if task.creator == None %}
-			{{task.metadata.owner_email}}
-		{% elif task.creator != user %}
-			{{task.creator}}
+	<div class="col-sm-3 sendby_assignedto">
+		{% if incoming_outgoing == "incoming" %}
+			{% if task.creator == None %}
+				{{task.metadata.owner_email}}
+			{% elif task.creator != user %}
+				<a href="{{task.outgoing.get_absolute_url}}">
+					{{task.creator}}
+				</a>
+			{% else %}
+				<i>yourself</i>
+			{% endif %}
 		{% else %}
-			<i>yourself</i>
+			<a href="{{task.incoming.get_absolute_url}}">
+				{{task.incoming.title_for_assigned_to}}
+			</a>
 		{% endif %}
 	</div>
 	<div class="col-sm-3 col-md-2 tasklist-item-actions">

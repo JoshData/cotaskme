@@ -37,7 +37,7 @@ function post_state(form_id, state) {
 	elems.prop("disabled", !state);
 }
 
-function do_post_task(form, callback) {
+function do_post_task(form, view_orientation, callback) {
   var form_id = $(form).attr('id');
 
   var elem_title = $('#' + form_id + '-title');
@@ -59,6 +59,7 @@ function do_post_task(form, callback) {
 		"/_post",
 		{
 			data: {
+        view_orientation: view_orientation, /* "incoming" or "outgoing" depending on what sort of list we are currently viewing, which controls how the task is rendered */
 				title: elem_title.val(),
 				notes: "",
 				incoming: elem_recipient.val(),

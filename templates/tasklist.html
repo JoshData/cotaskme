@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{% if incoming_outgoing %}{{incoming_outgoing}}{% endif %} Tasks -- CoTask.me{% endblock %}
+{% block title %}{% if incoming_outgoing == "outgoing" %}Outgoing{% endif %} Tasks -- CoTask.me{% endblock %}
 
 {% block body %}
 <div class="container">
@@ -27,15 +27,15 @@
 	{% if "admin" in roles %}
 	{# only the admin of a list can see outgoing tasks #}
 	<h2>
-		{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}Incoming{% else %}<a href="{{baseurl}}">Incoming</a>{% endif %}
+		{% if incoming_outgoing == "incoming" %}Incoming{% else %}<a href="{{baseurl}}">Incoming</a>{% endif %}
 		|
 		{% if incoming_outgoing == "outgoing" %}Outgoing{% else %}<a href="{{baseurl}}/outgoing">Outgoing</a>{% endif %}
 	</h2>
 	{% endif %}
 
-	<form id="new-task" role="form" class="row" onsubmit="return do_post_task(this, add_task_callback)">
+	<form id="new-task" role="form" class="row" onsubmit="return do_post_task(this, '{{incoming_outgoing|escapejs}}', add_task_callback)">
 		<div class="col-sm-12">
-			<h3>{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}Add{% else %}Assign{% endif %} a Task</h3>
+			<h3>{% if incoming_outgoing == "incoming" %}Add{% else %}Assign{% endif %} a Task</h3>
 		</div>
 
 		{# title #}
@@ -111,7 +111,7 @@
 				{{groupname}}
 			</div>
 			<div class="col-xs-3 hidden-xs">
-				{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}
+				{% if incoming_outgoing == "incoming" %}
 					Sent by
 				{% else %}
 					Assigned to
@@ -132,7 +132,7 @@
 
 	{% if no_tasks and "admin" in roles %}
 	<p id="no_tasks">
-		{% if incoming_outgoing == None or incoming_outgoing == "incoming" %}
+		{% if incoming_outgoing == "incoming" %}
 			No tasks have been assigned to you yet. Why not get started by giving yourself something easy to do?
 		{% else %}
 			You have not assigned any tasks to anyone else yet.

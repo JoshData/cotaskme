@@ -64,6 +64,17 @@ class TaskList(models.Model):
     def make_default_list_title(owner):
         return str(owner) + "'s Task List"
 
+    def title_for_assigned_to(self):
+        # How should we display the title of this list in outgoing
+        # tasks lists? If the list is owned by a single user and that
+        # user has just one list, display the owner's username. Otherwise
+        # display the title of this list.
+        if self.owners.count() == 1:
+            owner = self.owners.first()
+            if owner.tasklists_owned.count() <= 1:
+                return str(owner)
+        return self.title
+
     def get_user_roles(self, user):
         """Returns whether the user has permission to administer, post to, or observe the contents of the TaskList."""
         if user in self.owners.all(): return set(["admin", "post", "observe"])
