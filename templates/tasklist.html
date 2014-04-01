@@ -122,6 +122,7 @@
 	{% endif %}
 	</div>
 
+	<div style="margin: 1em 15px">
 	{% for groupid, groupname, tasks in task_groups %}
 		<div id="tasklist-group-{{groupid}}" class="tasklist-group" {% if tasks|length == 0 %}style="display: none"{% endif %}>
 		<div class="row tasklist-header">
@@ -147,6 +148,7 @@
 		{% endfor %}
 		</div>
 	{% endfor %}
+	</div>
 
 	{% if no_tasks and "admin" in roles %}
 	<p id="no_tasks">
