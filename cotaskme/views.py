@@ -100,7 +100,6 @@ def tasklist(request, slug=None, which_way=None):
 
 	return TemplateResponse(request, 'tasklist.html', {
 		"singleton_list": singleton_list,
-		"admin_list": singleton_list and "admin" in singleton_list.get_user_roles(request.user),
 		"all_lists": tasklists if len(tasklists) > 1 else None,
 		"baseurl": "/tasks" if slug in (None, "") else "/t/" + slug,
 		"incoming_outgoing": which_way,

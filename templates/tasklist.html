@@ -2,16 +2,19 @@
 
 {% block title %}{% if incoming_outgoing == "outgoing" %}Outgoing{% endif %} Tasks -- CoTask.me{% endblock %}
 
+{% block settings_menu %}
+	{% if singleton_list %}
+		{% if "admin" in roles %}
+			<li><a href="#" onclick="return do_rename()">Edit Title</a></li>
+			<li><a href="#" onclick="return do_change_slug()">Change URL</a></li>
+			<li class="divider"></li>
+		{% endif %}
+	{% endif %}
+{% endblock %}
+
 {% block body %}
 <div class="container">
 	{% if singleton_list %}
-		{% if admin_list %}
-			<p class="tasklist-admin-actions">
-				  <a href="#" onclick="return do_rename()">change title</a>
-				| <a href="#" onclick="return do_change_slug()">change url</a>
-			</p>
-		{% endif %}
-
 		<h1 id="task_list_title">{{singleton_list.title}}</h1>
 	{% endif %}
 

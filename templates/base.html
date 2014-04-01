@@ -40,10 +40,18 @@
                   {% if backends.associated|length > 0 %}
                     {% include "social_auth_association_handle.html" with association=backends.associated.0 %}
                   {% else %}
-                    {{user.email}}
+                    {{user}}
                   {% endif %}
                 </a></li>
-                <li><a href="/accounts/logout">logout</a></li>
+
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> <b class="caret"></b></a>
+                  <ul class="dropdown-menu">
+                    {% block settings_menu %}{% endblock %}
+                    <li><a href="/accounts/logout">Logout</a></li>
+                  </ul>
+                </li>
+
               {% endif %}
             </ul>
           </div>
