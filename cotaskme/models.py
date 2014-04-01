@@ -123,6 +123,15 @@ class Task(models.Model):
     auto_finish = models.BooleanField(default=False, help_text="Automatically finish a task when its dependencies are closed or finished.")
     metadata = JSONField()
 
+    def __str__(self):
+        return \
+            self.created.isoformat() \
+            + " " \
+            + (self.outgoing.title_for_assigned_to() if self.outgoing else "Anonymous") \
+            + " => " \
+            + self.incoming.title_for_assigned_to() \
+            + ": " + self.title
+
     @staticmethod
     def new(user, outgoing, incoming, dependent=None):
         """Creates a new Task."""

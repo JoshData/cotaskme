@@ -24,8 +24,8 @@
 		</p>
 	{% endif %}
 
-	{% if "admin" in roles %}
-	{# only the admin of a list can see outgoing tasks #}
+	{% if user.is_authenticated %}
+	{# only a logged in user can see outgoing tasks --- either on his own list or tasks assigned to him on other lists #}
 	<h2>
 		{% if incoming_outgoing == "incoming" %}Incoming{% else %}<a href="{{baseurl}}">Incoming</a>{% endif %}
 		|
@@ -33,6 +33,7 @@
 	</h2>
 	{% endif %}
 
+	{% if can_post_task %}
 	<form id="new-task" role="form" class="row" onsubmit="return do_post_task(this, '{{incoming_outgoing|escapejs}}', add_task_callback)">
 		<div class="col-sm-12">
 			<h3>{% if incoming_outgoing == "incoming" %}Add{% else %}Assign{% endif %} a Task</h3>
@@ -103,6 +104,23 @@
 			<div class="form-group"><button type="submit" class="btn btn-primary btn-sm">Post Task</button></div>
 		</div>
 	</form>
+	{% endif %}
+
+	<div id="filter-info" {% if no_tasks %}style="display: none"{% endif %}>
+	{% if incoming_outgoing == "incoming" %}
+		{% if "observe" in roles %}
+			{# show nothing #}
+		{% else %}
+			<p><em>Only tasks you assigned to {{singleton_list.title_for_assigned_to}} are shown here. Tasks assigned by others are hidden.</em></p>
+		{% endif %}
+	{% else %}
+		{% if "admin" in roles %}
+			{# show nothing #}
+		{% else %}
+			<p><em>Only tasks that {{singleton_list.title_for_assigned_to}} assigned to you are shown here. Tasks assigned by {{singleton_list.title_for_assigned_to}} to others are hidden.</em></p>
+		{% endif %}
+	{% endif %}
+	</div>
 
 	{% for groupid, groupname, tasks in task_groups %}
 		<div id="tasklist-group-{{groupid}}" class="tasklist-group" {% if tasks|length == 0 %}style="display: none"{% endif %}>
@@ -287,8 +305,10 @@
 		new_node.insertAfter(placeholder);
 		new_node.slideDown();
 
-		// as soon as we add a task we can hide the "no tasks" paragraph, if it's visible
+		// as soon as we add a task we can hide the "no tasks" paragraph, if it's visible,
+		// and show the filter-info paragraph, if it has content.
 		$('#no_tasks').hide();
+		$('#filter-info').show()
 	}
 </script>
 {% endblock %}

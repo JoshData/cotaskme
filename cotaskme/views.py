@@ -55,19 +55,34 @@ def tasklist(request, slug=None, which_way=None):
 	# Which tasks can the user view?
 	tasks = Task.objects.all()
 	if which_way == None: which_way = "incoming" # default view
+
 	if which_way == "incoming":
+		# What tasks have been assigned to this list?
 		tasks = tasks.filter(incoming__in=tasklists)
+
+		# If the user doesn't have permission to see what's on the list,
+		# he can only see tasks that were created by him.
+		if "observe" not in roles:
+			# this user can only see what *he* has posted to the list
+			if not request.user.is_authenticated():
+				tasks = tasks.none() # nothing to see
+			else:
+				tasks = tasks.filter(creator=request.user)
+
 	elif which_way == "outgoing":
 		tasks = tasks.filter(outgoing__in=tasklists).exclude(incoming__in=tasklists)
-		if "admin" not in roles: return HttpResponseForbidden()
+
+		# If the user doesn't own the list, he can only see tasks that
+		# were assigned to him.
+		if "admin" not in roles:
+			# this user can only see what *he* has posted to the list
+			if not request.user.is_authenticated():
+				return HttpResponseForbidden()
+			else:
+				tasks = tasks.filter(incoming__owners=request.user)
+
 	else:
 		raise ValueError(which_way)
-	if "observe" not in roles:
-		# this user can only see what *he* has posted to the list
-		if not request.user.is_authenticated():
-			tasks = tasks.none() # nothing to see
-		else:
-			tasks = tasks.filter(creator=request.user)
 
 	# Prepare tasks for rendering.
 	tasks = tasks.order_by('-created')
@@ -91,6 +106,7 @@ def tasklist(request, slug=None, which_way=None):
 		"incoming_outgoing": which_way,
 		"task_groups": task_groups,
 		"roles": roles,
+		"can_post_task": (which_way == "incoming" and "post" in roles) or (which_way == "outgoing" and "admin" in roles),
 		"no_tasks": not tasks.exists(),
 		"my_lists": TaskList.objects.filter(owners=request.user) if request.user.is_authenticated() else TaskList.objects.none(), # for assigning tasks
 		})
