@@ -19,7 +19,7 @@ TASK_STATE_VERBS = {
     (0, 1): ("Accept", "arrow-down"),
     (0, 2): ("Finish", "ok"),
     (0, 3, True): ("Reject", "remove"), # asignee sees if the task is not self-assigned
-    # (0, 3) is not a possible transition except when the assignee is rejecting a task (which is (0, 3, True))
+    (0, 3): ("Close", "ok"), # assignee sees this for anonymously assigned tasks only
     (1, 0): ("Move to Inbox", "envelope"),
     (1, 2): ("Finish", "ok"),
     (1, 3): ("Close", "ok"),
@@ -205,9 +205,9 @@ class Task(models.Model):
                     if "admin" in out_roles and s2 == 0:
                         # self-assigned tasks cannot be moved to the inbox
                         continue
-                    elif "admin" in out_roles and s2 == 2:
-                        # self-assigned tasks get closed instead of finished
-                        if s1 == 0: continue # self-assigned tasks are never in state 0
+                    elif ("admin" in out_roles or self.creator is None) and s2 == 2:
+                        # self-assigned and anonymous tasks get closed instead of finished
+                        if "admin" in out_roles and s1 == 0: continue # self-assigned tasks are never in state 0
                         ret.add((s1, 3))
                     else:
                         ret.add((s1, s2))
