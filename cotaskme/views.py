@@ -90,9 +90,13 @@ def tasklist(request, slug=None, which_way=None):
 		prepare_for_view(task, request)
 
 	# Group tasks by current state.
+	task_state_names = [(i, TASK_STATE_NAMES[i]) for i in range(len(TASK_STATE_NAMES))]
+	if which_way == "outgoing":
+		# the label for state 0 (Inbox) should be different
+		task_state_names[0] = (0, "Not Yet Accepted")
 	task_groups = [
-		(i, TASK_STATE_NAMES[i], [t for t in tasks if t.state == i])
-		for i in range(len(TASK_STATE_NAMES))
+		(state_id, state_label, [t for t in tasks if t.state == state_id])
+		for state_id, state_label in task_state_names
 	]
 
 	# Are we looking at a single list?
