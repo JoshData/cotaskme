@@ -200,11 +200,13 @@ class Task(models.Model):
                     if "admin" in out_roles and s2 == 0:
                         # self-assigned tasks cannot be moved to the inbox
                         continue
-                    elif "admin" in out_roles and s1 != 2 and s2 == 2:
+                    elif "admin" in out_roles and s2 == 2:
+                        # self-assigned tasks get closed instead of finished
                         ret.add((s1, 3))
                     else:
                         ret.add((s1, s2))
             if "admin" not in out_roles:
+                # task is not self-assigned
                 ret.add((0, 3, True)) # reject
                 ret.add((3, 0)) # un-reject
 
@@ -215,7 +217,9 @@ class Task(models.Model):
             # closed to active.
             ret.add((2, 3))
             if "admin" not in in_roles:
+                # task is not self-assigend
                 if not self.was_rejected():
+                    # once a task is rejected, the asigner can't un-reject it
                     ret.add((3, 2))
             else:
                 ret.add((3, 1))
