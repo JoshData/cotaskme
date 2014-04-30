@@ -215,10 +215,18 @@ class Task(models.Model):
                 # task is not self-assigned
                 ret.add((0, 3, True)) # reject
                 ret.add((3, 0)) # un-reject
+
+                if self.creator is None:
+                    # anonymous tasks can be deleted at any time
+                    # (anomyous tasks are never in a finished state)
+                    for s1 in (0, 1, 3):
+                        ret.add((s1, "DELETE"))
             else:
                 # this is a self-assigned task
+
+                # can delete at any time (self-assigned tasks are never in state 0)
                 for s1 in (1, 2, 3):
-                    ret.add((s1, "DELETE")) # can delete at any time (self-assigned tasks are never in state 0)
+                    ret.add((s1, "DELETE"))
 
 
         if "admin" in out_roles:
