@@ -113,7 +113,20 @@
 		{% if "observe" in roles %}
 			{# show nothing #}
 		{% else %}
-			<p><em>Only tasks you assigned to {{singleton_list.title_for_assigned_to}} are shown here. Tasks assigned by others are hidden.</em></p>
+            {% if user.is_authenticated %}
+				<p><em>Only tasks you assigned to {{singleton_list.title_for_assigned_to}} are shown here. Tasks assigned by others are hidden.</em></p>
+			{% else %}
+				<p style="margin-top: 1em">Create an account now to be notified when {{singleton_list.title_for_assigned_to}} completes the task. Or log in to put these tasks in your outgoing list.</p>
+
+				<p>
+                {% for backend, iconclass in login_backends %}
+                  <a href="{% url "social:begin" backend %}" class="btn btn-{{backend}}" title="login with {{backend}}" style="padding: 5px; margin: 6px;" onclick="return start_login(this);"><i class="icon-{{iconclass}}"></i></a>
+                {% endfor %}
+                </p>
+
+				<p style="margin-top: 2em"><em>{{singleton_list.title_for_assigned_to}} sees:</em></p>
+            {% endif %}
+
 		{% endif %}
 	{% else %}
 		{% if "admin" in roles %}

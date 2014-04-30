@@ -13,6 +13,7 @@ urlpatterns = patterns('',
     url(r'^t/([^/]+)(?:/(outgoing|incoming))?$', 'cotaskme.views.tasklist', name='tasklist'),
     url(r'^_action$', 'cotaskme.views.tasklist_action', name='tasklist_action'),
     url(r'^_post$', 'cotaskme.views.tasklist_post', name='tasklist_post'),
+    url(r'^_claim$', 'cotaskme.views.new_user_claim_tasks', name='new_user_claim_tasks'),
 
     url('', include('social.apps.django_app.urls', namespace='social')),
 

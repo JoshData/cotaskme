@@ -176,8 +176,24 @@ def tasklist_post(request):
 	# update with initial properties
 	t.title = str(request.POST.get("title")).strip()
 	t.notes = str(request.POST.get("note")).strip()
+
+	# if the user is anonymous, store the user's email in the task
+	# and also a random UUID so the user can claim it after registering
 	if not request.user.is_authenticated():
+		# assign a random UUID to this task so the user can claim it later
+		claim_id = request.POST.get("claim_id", "")
+
+		# validate that the user provided a valid claim ID, or if one was
+		# not provided make one.
+		if len(claim_id.strip()) != 32 or not Task.objects.filter(anonymous_claim_id=claim_id).exists():
+			claim_id = ""
+		if claim_id == "":
+			import uuid
+			claim_id = uuid.uuid4().hex
+
 		t.metadata = { "owner_email": request.POST.get("assigner_email") }
+		t.anonymous_claim_id = claim_id
+
 	t.save()
 
 	# render the task for the response
@@ -190,7 +206,13 @@ def tasklist_post(request):
 		"incoming_outgoing": request.POST.get("view_orientation"),
 	}))
 
-	return { "status": "ok", "task_html": task_html, "state": t.state, "is_self_task": (incoming == outgoing) }
+	return {
+		"status": "ok",
+		"task_html": task_html,
+		"state": t.state,
+		"is_self_task": (incoming == outgoing),
+		"anonymous_claim_id": t.anonymous_claim_id,
+		 }
 
 @login_required
 def profile_view(request):
@@ -203,6 +225,14 @@ def logout_view(request):
 	from django.contrib.auth import logout
 	logout(request)
 	return redirect("/")
+
+@login_required
+def new_user_claim_tasks(request):
+	claim_id = request.GET.get("id")
+	if len(claim_id.strip()) != 32: return HttpResponseForbidden() # fails basic validation
+	for t in Task.objects.filter(anonymous_claim_id=claim_id):
+		t.claim(request.user, claim_id)
+	return redirect(request.GET.get("next", "/"))
 
 @login_required
 @json_response

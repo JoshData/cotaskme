@@ -46,6 +46,7 @@ function post_state(form_id, state) {
 	elems.prop("disabled", !state);
 }
 
+var anonymous_claim_id = null;
 function do_post_task(form, view_orientation, callback) {
   var form_id = $(form).attr('id');
 
@@ -73,7 +74,8 @@ function do_post_task(form, view_orientation, callback) {
 				notes: "",
 				incoming: elem_recipient.val(),
         outgoing: elem_assigner.length ? elem_assigner.val() : elem_recipient.val(),
-        assigner_email: elem_assigner_email.val()
+        assigner_email: elem_assigner_email.val(),
+        claim_id: anonymous_claim_id
 			},
 			method: "POST",
 			success: function(res) {
@@ -86,6 +88,11 @@ function do_post_task(form, view_orientation, callback) {
   			// reset fields to prevent double-submit
   			elem_title.val('');
 
+        // hold our new anonymous_claim_id in case we submit more tasks
+        anonymous_claim_id = res.anonymous_claim_id;
+        window.location.hash = "#claim=" + anonymous_claim_id;
+
+        // call the callback!
         callback(res);
 			},
 			error: function() {
@@ -94,4 +101,19 @@ function do_post_task(form, view_orientation, callback) {
 			}
 		});
 	return false;
+}
+
+function start_login(a_elem) {
+  // Where should the login page redirect to? Back to this page.
+  var next = window.location;
+
+  // If we put a claim UUID in the hash, modify the login target page
+  // to stop first at a view that will claim anonymous tasks. Then
+  // return to this URL.
+  if (window.location.hash.substr(0, 7) == "#claim=")
+    next = "/_claim?id=" + window.location.hash.substr(7) + "&next=" + encodeURIComponent(next);
+
+  // Okay, redirect to login with the next paramater storing where we want to go after.
+  window.location = a_elem.href + "?next=" + encodeURIComponent(next);
+  return false; // prevent default link behavior
 }

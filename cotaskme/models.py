@@ -128,6 +128,7 @@ class Task(models.Model):
     dependencies = models.ManyToManyField('self', blank=True, db_index=True)
     auto_finish = models.BooleanField(default=False, help_text="Automatically finish a task when its dependencies are closed or finished.")
     metadata = JSONField()
+    anonymous_claim_id = models.CharField(max_length=32, blank=True, db_index=True, help_text="For anonymously-created tasks, a random string that allows the user to claim it after registering.")
 
     def __str__(self):
         return \
@@ -173,6 +174,41 @@ class Task(models.Model):
         e.save()
 
         return t
+
+    def claim(self, by_user, claim_id):
+        # Let a task that was created previously by an anonymous user
+        # be claimed (and now owned by) a real user.
+
+        if not by_user.is_authenticated(): raise ValueError()
+        if self.creator is not None: raise ValueError()
+        if claim_id is None or self.anonymous_claim_id != claim_id: raise ValueError()
+
+        # Which outgoing list will the task be put on?
+        # A user might own more than one list, but we don't really suppor that
+        # in the UI, so just take the first.
+        try:
+            outgoing = TaskList.objects.filter(owners=by_user)[0]
+        except IndexError:
+            raise ValueError()
+
+        # Update the task.
+        self.creator = by_user
+        self.outgoing = outgoing
+        self.anonymous_claim_id = None
+        if self.state == 0 and self.incoming == self.outgoing:
+            # if the user anonymously assigned the task to himself, immediately
+            # promote it out of Inbox
+            self.state = 1
+        self.save()
+
+        # Record the event.
+        e = TaskEvent()
+        e.task = self
+        e.event_data = {
+            "type": "claimed",
+            "user": by_user.id,
+        }
+        e.save()
 
     def was_rejected(self):
         return isinstance(self.metadata, dict) and (self.metadata.get("rejected") == True)

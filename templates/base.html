@@ -33,7 +33,7 @@
             <ul class="nav navbar-nav navbar-right">
               {% if not user.is_authenticated %}
                 {% for backend, iconclass in login_backends %}
-                  <li><div><a href="{% url "social:begin" backend %}" class="btn btn-{{backend}}" title="login with {{backend}}" style="padding: 5px; margin: 6px;"><i class="icon-{{iconclass}}"></i></a></div></li>
+                  <li><div><a href="{% url "social:begin" backend %}" class="btn btn-{{backend}}" title="login with {{backend}}" style="padding: 5px; margin: 6px;" onclick="return start_login(this);"><i class="icon-{{iconclass}}"></i></a></div></li>
                 {% endfor %}
               {% else %}
                 <li><a href="/profile">
