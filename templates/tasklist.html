@@ -226,7 +226,7 @@
 			
 			var old_container = elem.parent(".tasklist-group");
 			var new_container = $("#tasklist-group-" + new_state);
-			var old_placeholder = old_container.find('.tasklist-item-animation-placeholder');
+			var old_placeholder = old_container.find('.tasklist-item-animation-placeholder').clone();
 			var new_placeholder = new_container.find('.tasklist-item-animation-placeholder');
 
 			// create a placeholder for where the task will be inserted
@@ -282,7 +282,7 @@
 						old_container.slideUp(function() { old_placeholder.hide(); });
 					else
 						// get rid of the placeholder in the old list gracefully
-						old_placeholder.slideUp();
+						old_placeholder.slideUp(function() { old_placeholder.remove(); });
 
 					// finish gracefully changing which action buttons are displayed
 					// by fading them in; CSS selectors take care of deciding which
