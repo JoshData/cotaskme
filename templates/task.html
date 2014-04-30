@@ -17,7 +17,7 @@
 	</div>
 	<div class="col-sm-3 col-md-2 tasklist-item-actions">
 		{% for curstate, newstate, verb in task.state_matrix %}
-			<a href="#" onclick="return change_task_state({{task.id}}, {{newstate}});" class="task-change-state task-change-state-from-{{curstate}} task-change-state-{{newstate}} glyphicon glyphicon-{{verb.1}}" title="{{verb.0}}"></a>
+			<a href="#" onclick="return change_task_state({{task.id}}, '{{newstate}}');" class="task-change-state task-change-state-from-{{curstate}} task-change-state-{{newstate}} glyphicon glyphicon-{{verb.1}}" title="{{verb.0}}"></a>
 		{% endfor %}
 	</div>
 </div>

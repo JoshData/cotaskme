@@ -136,7 +136,9 @@ def tasklist_action(request):
 	if request.POST.get("action") == "task-state":
 		t = get_object_or_404(Task, id=request.POST.get("task"))
 		try:
-			t.change_state(request.user, int(request.POST.get("state")))
+			state = request.POST.get("state")
+			if state != "DELETE": state = int(state)
+			t.change_state(request.user, state)
 			return { "status": "ok", "was_rejected": t.was_rejected() }
 		except ValueError as e:
 			return { "status": "error", "msg": str(e) }

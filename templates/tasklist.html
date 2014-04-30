@@ -215,11 +215,35 @@
 	}
 
 	function change_task_state(task_id, new_state) {
+		if (new_state != "DELETE") {
+			change_task_state2(task_id, new_state);
+		} else {
+			var task_title = $('#tasklist-item-' + task_id).find('.title').text();
+			show_modal_confirm("Delete task?", "Are you sure you want to delete the task " + task_title + "?",
+				function() {
+					function on_task_state_changed(dummy, response) {
+						// delete the task from the UI
+						var elem = $('#tasklist-item-' + task_id);
+						var old_container = elem.parent(".tasklist-group");
+						elem.fadeOut(function() {
+							elem.remove();
+							// the group might now be empty
+							close_container_if_empty(old_container);
+						});
+
+					};
+
+					do_action({ action: "task-state", task: task_id, state: new_state }, "change state", on_task_state_changed);
+				})
+		}
+		return false; // cancel <a> event
+	}
+
+	function change_task_state2(task_id, new_state) {
 		function on_task_state_changed(dummy, response) {
 			var elem = $('#tasklist-item-' + task_id);
 
 			// update the rejected class
-			console.log(response.was_rejected);
 			elem.toggleClass("rejected", response.was_rejected);
 
 			// animate this task into its new position
@@ -278,11 +302,10 @@
 					new_placeholder.hide();
 
 					// if the old group has no more tasks, fade it out
-					if (old_container.find('.tasklist-item').length == 0)
-						old_container.slideUp(function() { old_placeholder.hide(); });
-					else
-						// get rid of the placeholder in the old list gracefully
-						old_placeholder.slideUp(function() { old_placeholder.remove(); });
+					close_container_if_empty(old_container);
+
+					// get rid of the placeholder in the old list gracefully
+					old_placeholder.slideUp(function() { old_placeholder.remove(); });
 
 					// finish gracefully changing which action buttons are displayed
 					// by fading them in; CSS selectors take care of deciding which
@@ -294,7 +317,12 @@
 		}
 
 		do_action({ action: "task-state", task: task_id, state: new_state }, "change state", on_task_state_changed);
-		return false; // cancel <a> event
+	}
+
+	function close_container_if_empty(container) {
+		// if the group has no more tasks, fade it out
+		if (container.find('.tasklist-item').length == 0)
+			container.slideUp(function() { container.hide(); });
 	}
 
 	function add_task_callback(res) {

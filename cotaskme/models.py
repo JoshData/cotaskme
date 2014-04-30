@@ -18,8 +18,8 @@ TASK_STATE_NAMES = ("Inbox", "Active", "Finished", "Closed")
 TASK_STATE_VERBS = {
     (0, 1): ("Accept", "arrow-down"),
     (0, 2): ("Finish", "ok"),
-    (0, 3, True): ("Reject", "remove"), # if the task is not self-assigned
-    (0, 3): ("Close", "remove"), # if the task is self-assigned
+    (0, 3, True): ("Reject", "remove"), # asignee sees if the task is not self-assigned
+    # (0, 3) is not a possible transition except when the assignee is rejecting a task (which is (0, 3, True))
     (1, 0): ("Move to Inbox", "envelope"),
     (1, 2): ("Finish", "ok"),
     (1, 3): ("Close", "ok"),
@@ -29,6 +29,11 @@ TASK_STATE_VERBS = {
     (3, 0): ("Move to Inbox", "envelope"),
     (3, 1): ("Return to Active", "repeat"),
     (3, 2): ("Return to Finished", "backward"),
+
+    (0, "DELETE"): ("Delete", "remove"), # assigner sees if not self-assigned
+    (1, "DELETE"): ("Delete", "remove"),
+    (2, "DELETE"): ("Delete", "remove"),
+    (3, "DELETE"): ("Delete", "remove"),
 }
 
 class TaskList(models.Model):
@@ -202,6 +207,7 @@ class Task(models.Model):
                         continue
                     elif "admin" in out_roles and s2 == 2:
                         # self-assigned tasks get closed instead of finished
+                        if s1 == 0: continue # self-assigned tasks are never in state 0
                         ret.add((s1, 3))
                     else:
                         ret.add((s1, s2))
@@ -209,6 +215,11 @@ class Task(models.Model):
                 # task is not self-assigned
                 ret.add((0, 3, True)) # reject
                 ret.add((3, 0)) # un-reject
+            else:
+                # this is a self-assigned task
+                for s1 in (1, 2, 3):
+                    ret.add((s1, "DELETE")) # can delete at any time (self-assigned tasks are never in state 0)
+
 
         if "admin" in out_roles:
             # An admin on the outgoing list can move a task between 2 (finished) and 3 (closed).
@@ -221,6 +232,7 @@ class Task(models.Model):
                 if not self.was_rejected():
                     # once a task is rejected, the asigner can't un-reject it
                     ret.add((3, 2))
+                ret.add((0, "DELETE")) # can delete only when the assignee has not yet acknowledged it
             else:
                 ret.add((3, 1))
         return sorted(s for s in ret if s != self.state)
@@ -251,6 +263,11 @@ class Task(models.Model):
             else:
                 # This is not permitted.
                 raise ValueError("You do not have permission to make that change.")
+
+        if new_state == "DELETE":
+            # This is a hard delete of a task.
+            self.delete()
+            return
 
         # record change
         e = TaskEvent()

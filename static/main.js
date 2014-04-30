@@ -4,6 +4,15 @@ function show_modal_error(title, message) {
 	$('#error_modal').modal({});
 }
 
+var confirm_modal_callback = null;
+function show_modal_confirm(title, message, callback) {
+  confirm_modal_callback = callback;
+  $('#confirm_modal h4').text(title);
+  $('#confirm_modal p').text(message);
+  $("#confirm_modal .btn-danger").off("click").click(callback);
+  $('#confirm_modal').modal({});
+}
+
 function post_task_typehead_init(form) {
   form.find('#' + form.attr('id') + "-recipient").typeahead({
     autoselect: true,
